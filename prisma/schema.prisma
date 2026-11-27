@@ -1,0 +1,240 @@
+// Secure Examination Management System — data model (part 1: users, question bank, exams)
+// Rules that Prisma cannot express (CHECK constraints, triggers, case-insensitive
+// uniqueness) live in the SQL of the first migration. See docs/DATA_MODEL.md.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────── Enums ─────────────────────────
+
+enum Role {
+  ADMIN
+  EXAMINER
+  CANDIDATE
+}
+
+enum Theme {
+  LIGHT
+  DARK
+}
+
+enum FontSize {
+  SMALL
+  MEDIUM
+  LARGE
+  XLARGE
+}
+
+enum WorkspaceLayout {
+  SINGLE // one question per screen
+  SPLIT // question + scratchpad side by side
+}
+
+enum NavPosition {
+  LEFT
+  RIGHT
+  BOTTOM
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTI_SELECT
+  WRITTEN
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+// Only DRAFT and PUBLISHED are stored. "Upcoming", "ongoing" and "completed" are
+// derived from start_at / end_at and the SERVER clock, so they can never go stale.
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum MultiSelectRule {
+  ALL_OR_NOTHING
+  PARTIAL
+}
+
+enum ResultsStatus {
+  HIDDEN
+  PUBLISHED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  REVOKED
+}
+
+// ───────────────────── Users & access ─────────────────────
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  name         String    @db.VarChar(100)
+  email        String    @unique @db.VarChar(254) // always stored lower-case
+  passwordHash String    @map("password_hash")
+  role         Role
+  isActive     Boolean   @default(true) @map("is_active")
+  // Bumped on deactivation, role change or password change → every old login token dies.
+  tokenVersion Int       @default(0) @map("token_version")
+  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  preferences        WorkspacePreferences?
+  categoriesCreated  Category[]
+  questionsCreated   Question[]
+  examsCreated       Exam[]
+  enrollments        Enrollment[]          @relation("EnrollmentCandidate")
+  enrollmentsCreated Enrollment[]          @relation("EnrollmentEnrolledBy")
+
+  @@index([role])
+  @@map("users")
+}
+
+model WorkspacePreferences {
+  userId       String          @id @map("user_id") @db.Uuid
+  theme        Theme           @default(LIGHT)
+  fontSize     FontSize        @default(MEDIUM) @map("font_size")
+  layout       WorkspaceLayout @default(SINGLE)
+  navPosition  NavPosition     @default(RIGHT) @map("nav_position")
+  highContrast Boolean         @default(false) @map("high_contrast")
+  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_preferences")
+}
+
+// ───────────────────── Question bank ─────────────────────
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(80) // + case-insensitive unique index in SQL
+  description String?  @db.VarChar(500)
+  createdById String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  createdBy User       @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  questions Question[]
+
+  @@map("categories")
+}
+
+model Question {
+  id           String       @id @default(uuid()) @db.Uuid
+  categoryId   String       @map("category_id") @db.Uuid
+  createdById  String       @map("created_by") @db.Uuid
+  type         QuestionType
+  text         String
+  difficulty   Difficulty
+  defaultMarks Decimal      @map("default_marks") @db.Decimal(6, 2)
+  modelAnswer  String?      @map("model_answer") // WRITTEN only (CHECK in SQL)
+  explanation  String?
+  isActive     Boolean      @default(true) @map("is_active") // soft delete; exams keep pointing at it
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  category      Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy     User             @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  options       QuestionOption[]
+  examQuestions ExamQuestion[]
+
+  @@index([categoryId])
+  @@index([createdById])
+  @@index([type, difficulty])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String  @id @default(uuid()) @db.Uuid
+  questionId String  @map("question_id") @db.Uuid
+  text       String  @db.VarChar(1000)
+  isCorrect  Boolean @default(false) @map("is_correct") // never sent to candidates
+  orderIndex Int     @map("order_index")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("question_options")
+}
+
+// ───────────────────────── Exams ─────────────────────────
+
+model Exam {
+  id                 String          @id @default(uuid()) @db.Uuid
+  createdById        String          @map("created_by") @db.Uuid
+  title              String          @db.VarChar(200)
+  description        String?
+  instructions       String?
+  startAt            DateTime?       @map("start_at") @db.Timestamptz(3) // required once published
+  endAt              DateTime?       @map("end_at") @db.Timestamptz(3)
+  durationMinutes    Int             @map("duration_minutes")
+  totalMarks         Decimal         @map("total_marks") @db.Decimal(7, 2) // must equal sum of question marks to publish
+  passMarks          Decimal         @map("pass_marks") @db.Decimal(7, 2)
+  status             ExamStatus      @default(DRAFT)
+  shuffleQuestions   Boolean         @default(false) @map("shuffle_questions")
+  shuffleOptions     Boolean         @default(false) @map("shuffle_options")
+  multiSelectRule    MultiSelectRule @default(ALL_OR_NOTHING) @map("multi_select_rule")
+  // Integrity settings, e.g. { "requireFullscreen": true, "maxTabSwitchWarnings": 3 }
+  settings           Json            @default("{}")
+  publishedAt        DateTime?       @map("published_at") @db.Timestamptz(3)
+  resultsStatus      ResultsStatus   @default(HIDDEN) @map("results_status")
+  resultsPublishedAt DateTime?       @map("results_published_at") @db.Timestamptz(3)
+  // Disputes allowed for this many hours AFTER results are published (5.4).
+  disputeWindowHours Int             @default(72) @map("dispute_window_hours")
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  createdBy   User           @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  questions   ExamQuestion[]
+  enrollments Enrollment[]
+
+  @@index([createdById])
+  @@index([status, startAt])
+  @@map("exams")
+}
+
+model ExamQuestion {
+  id            String  @id @default(uuid()) @db.Uuid
+  examId        String  @map("exam_id") @db.Uuid
+  questionId    String  @map("question_id") @db.Uuid
+  marks         Decimal @db.Decimal(6, 2)
+  negativeMarks Decimal @default(0) @map("negative_marks") @db.Decimal(6, 2)
+  orderIndex    Int     @map("order_index")
+
+  exam     Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([examId, questionId])
+  @@index([questionId])
+  @@map("exam_questions")
+}
+
+model Enrollment {
+  id           String           @id @default(uuid()) @db.Uuid
+  examId       String           @map("exam_id") @db.Uuid
+  candidateId  String           @map("candidate_id") @db.Uuid
+  enrolledById String           @map("enrolled_by") @db.Uuid
+  status       EnrollmentStatus @default(ACTIVE)
+  enrolledAt   DateTime         @default(now()) @map("enrolled_at") @db.Timestamptz(3)
+  revokedAt    DateTime?        @map("revoked_at") @db.Timestamptz(3)
+
+  exam       Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  candidate  User @relation("EnrollmentCandidate", fields: [candidateId], references: [id], onDelete: Restrict)
+  enrolledBy User @relation("EnrollmentEnrolledBy", fields: [enrolledById], references: [id], onDelete: Restrict)
+
+  @@unique([examId, candidateId])
+  @@index([candidateId])
+  @@map("enrollments")
+}
