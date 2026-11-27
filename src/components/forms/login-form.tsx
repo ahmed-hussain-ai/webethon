@@ -37,7 +37,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-5">
+    <form onSubmit={onSubmit} method="post" noValidate className="space-y-5">
       {alert && <FormAlert tone={alert.tone}>{alert.text}</FormAlert>}
       <Field label="Email" name="email" type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" error={fields.email} autoFocus />
       <Field label="Password" name="password" type="password" autoComplete="current-password" error={fields.password} />

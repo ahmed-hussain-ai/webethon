@@ -43,7 +43,7 @@ export function SignupForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-5">
+    <form onSubmit={onSubmit} method="post" noValidate className="space-y-5">
       {alert && <FormAlert>{alert}</FormAlert>}
       <Field label="Full name" name="name" autoComplete="name" error={fields.name} autoFocus />
       <Field label="Email" name="email" type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" error={fields.email} />

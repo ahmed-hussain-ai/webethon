@@ -15,7 +15,15 @@ const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
 ];
 
+// Extra hostnames allowed to open the DEV server (e.g. the server's public IP when testing
+// remotely). Without this, Next.js blocks its dev scripts and pages stop working.
+const allowedDevOrigins = (process.env.ALLOWED_DEV_ORIGINS ?? "")
+  .split(",")
+  .map((h) => h.trim())
+  .filter(Boolean);
+
 const nextConfig: NextConfig = {
+  allowedDevOrigins,
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false, // don't advertise the framework
