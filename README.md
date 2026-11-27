@@ -269,7 +269,7 @@ docs/                design notes and demo script
 <a id="07"></a>
 <img src="docs/assets/s07.svg" alt="07 Try it" width="100%"/>
 
-**Live:** https://webethon.cognifysol.com · **Password for every account:** `Password@123`
+**Live:** https://webethon.cognifysol.com · **Password for every account:** `Password@123` · the login page also has **one-click demo buttons** for each role.
 
 | Role | Email | What to try |
 |---|---|---|

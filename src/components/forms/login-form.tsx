@@ -54,7 +54,7 @@ export function LoginForm() {
       <SubmitButton pending={pending}>{pending ? "Signing in…" : "Sign in"}</SubmitButton>
       {DEMO && (
         <div className="border-t border-line pt-3">
-          <p className="mb-2 text-xs font-semibold text-muted">Demo accounts: click to fill</p>
+          <p className="mb-2 text-xs font-semibold text-muted">Demo accounts: one-click sign in</p>
           <div className="flex flex-wrap gap-2">
             {DEMO_ACCOUNTS.map(([label, email]) => (
               <button key={email} type="button" onClick={(e) => fillDemo(e.currentTarget.form, email)}
