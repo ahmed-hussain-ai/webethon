@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { ShellSkeleton, StaffShell } from "@/components/staff-shell";
 import { ExamHeader } from "@/components/exams/exam-header";
 import { ResultsActions } from "@/components/results/results-actions";
+import { LiveMonitor } from "@/components/results/live-monitor";
 import { DifficultyBadge } from "@/components/badges";
 import { LocalTime } from "@/components/local-time";
 import { requirePageRole } from "@/lib/auth/page-guards";
@@ -49,6 +50,8 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
             {s.submitted > 0 && <a href={`/api/exams/${exam.id}/results/pdf`} className="inline-block text-sm font-semibold text-brand underline">Download exam report (PDF)</a>}
           </div>
         </section>
+
+        <LiveMonitor examId={exam.id} live={exam.phase === "ONGOING"} />
 
         <section aria-label="Summary" className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
           <Tile label="Submitted" value={s.submitted} />

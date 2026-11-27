@@ -5,6 +5,6 @@ import { getPaper } from "@/lib/attempts/workspace";
 
 // GET /api/my/attempts/:id/paper → frozen paper + saved answers (no answer keys)
 export const GET = handler<{ params: Promise<{ id: string }> }>(async (_req, ctx) => {
-  const user = await requireRole("CANDIDATE");
+  const user = await requireRole("CANDIDATE", "EXAMINER", "ADMIN");
   return ok({ paper: await getPaper(user, await idParam(ctx, "Attempt")) });
 });

@@ -70,7 +70,7 @@ async function visibleExams(userId: string, examId?: string) {
     },
     select: {
       id: true, title: true, description: true, instructions: true, status: true, startAt: true, endAt: true,
-      durationMinutes: true, totalMarks: true, passMarks: true, resultsStatus: true, multiSelectRule: true,
+      durationMinutes: true, totalMarks: true, passMarks: true, resultsStatus: true, multiSelectRule: true, settings: true,
       _count: { select: { questions: true } },
       enrollments: { where: { candidateId: userId }, select: { status: true } },
       attempts: {
@@ -130,6 +130,7 @@ export async function getLobby(user: CurrentUser, examId: string) {
   if (s.state === "REMOVED") throw NOT_FOUND();
   return {
     ...s, instructions: e.instructions, passMarks: n(e.passMarks), multiSelectRule: e.multiSelectRule,
+    requireFullscreen: !!(e.settings as { requireFullscreen?: boolean })?.requireFullscreen,
     serverNow: now.toISOString(),
   };
 }
@@ -142,6 +143,70 @@ function shuffled<T>(xs: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+type ExamWithQuestions = {
+  shuffleQuestions: boolean;
+  shuffleOptions: boolean;
+  questions: {
+    marks: Prisma.Decimal; negativeMarks: Prisma.Decimal;
+    question: { id: string; type: "SINGLE_CHOICE" | "MULTI_SELECT" | "WRITTEN"; text: string; difficulty: string; modelAnswer: string | null;
+      category: { name: string }; options: { id: string; text: string; isCorrect: boolean }[] };
+  }[];
+};
+
+/** Freeze the paper: question order, option order, marks and the correct answers (server-side only). */
+function buildPaper(exam: ExamWithQuestions) {
+  const order = exam.shuffleQuestions ? shuffled(exam.questions) : exam.questions;
+  const paper = order.map((eq, orderIndex) => {
+    const q = eq.question;
+    const opts = q.type === "WRITTEN" ? [] : exam.shuffleOptions ? shuffled(q.options) : q.options;
+    return {
+      questionId: q.id,
+      orderIndex,
+      optionOrder: opts.map((o) => o.id),
+      marks: eq.marks,
+      negativeMarks: q.type === "WRITTEN" ? 0 : eq.negativeMarks,
+      snapshot: {
+        type: q.type, text: q.text, difficulty: q.difficulty, category: q.category.name,
+        options: opts.map((o) => ({ id: o.id, text: o.text })),
+        correctOptionIds: q.options.filter((o) => o.isCorrect).map((o) => o.id),
+        modelAnswer: q.modelAnswer,
+      },
+    };
+  });
+  const totalMarks = paper.reduce((s, p) => s + n(p.marks), 0);
+
+  return { paper, totalMarks };
+}
+
+/**
+ * Examiner preview (PDF 4.3): a SANDBOX attempt on their own exam, in any state, ignoring the
+ * window and enrollment. Never counted in results or statistics; a new preview replaces the old one.
+ */
+export async function startSandbox(actor: CurrentUser, examId: string) {
+  const exam = await db.exam.findUnique({
+    where: { id: examId },
+    include: {
+      questions: {
+        orderBy: [{ orderIndex: "asc" }, { id: "asc" }],
+        include: { question: { include: { options: { orderBy: [{ orderIndex: "asc" }, { id: "asc" }] }, category: { select: { name: true } } } } },
+      },
+    },
+  });
+  if (!exam || (actor.role !== "ADMIN" && exam.createdById !== actor.id)) throw NOT_FOUND();
+  if (!exam.questions.length) throw new ApiError(409, "NO_QUESTIONS", "Add questions before previewing.");
+  const { paper, totalMarks } = buildPaper(exam);
+  const now = new Date();
+  return db.$transaction(async (tx) => {
+    await tx.attempt.deleteMany({ where: { examId, userId: actor.id, isSandbox: true } });
+    const a = await tx.attempt.create({
+      data: { examId, userId: actor.id, isSandbox: true, startedAt: now, deadlineAt: new Date(now.getTime() + exam.durationMinutes * 60_000), questionCount: paper.length, totalMarks },
+      select: { id: true },
+    });
+    await tx.attemptQuestion.createMany({ data: paper.map((p) => ({ ...p, attemptId: a.id })) });
+    return { attemptId: a.id };
+  });
 }
 
 /**
@@ -179,27 +244,7 @@ export async function startAttempt(user: CurrentUser, examId: string) {
   }
   if (!exam.questions.length) throw new ApiError(409, "NOT_ELIGIBLE", "This exam has no questions. Contact your examiner.");
 
-  // Freeze the paper: question order, option order, marks and the correct answers (server-side only).
-  const order = exam.shuffleQuestions ? shuffled(exam.questions) : exam.questions;
-  const paper = order.map((eq, orderIndex) => {
-    const q = eq.question;
-    const opts = q.type === "WRITTEN" ? [] : exam.shuffleOptions ? shuffled(q.options) : q.options;
-    return {
-      questionId: q.id,
-      orderIndex,
-      optionOrder: opts.map((o) => o.id),
-      marks: eq.marks,
-      negativeMarks: q.type === "WRITTEN" ? 0 : eq.negativeMarks,
-      snapshot: {
-        type: q.type, text: q.text, difficulty: q.difficulty, category: q.category.name,
-        options: opts.map((o) => ({ id: o.id, text: o.text })),
-        correctOptionIds: q.options.filter((o) => o.isCorrect).map((o) => o.id),
-        modelAnswer: q.modelAnswer,
-      },
-    };
-  });
-  const totalMarks = paper.reduce((s, p) => s + n(p.marks), 0);
-
+  const { paper, totalMarks } = buildPaper(exam);
   try {
     const attempt = await db.$transaction(async (tx) => {
       const a = await tx.attempt.create({

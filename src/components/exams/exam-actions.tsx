@@ -44,6 +44,13 @@ export function ExamActions({ examId, status, canPublish, canUnpublish, canDelet
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
+        <button type="button" className={btn.secondary} disabled={!!busy} onClick={async () => {
+          setBusy("preview");
+          const r = await postJson<{ attemptId: string }>(`/api/exams/${examId}/preview`);
+          if (r.ok) { router.push(`/attempts/${r.data.attemptId}`); return; }
+          setBusy(undefined);
+          setError(r.error.message);
+        }}>{busy === "preview" ? "Opening preview…" : "Preview as candidate"}</button>
         {status === "DRAFT" && (
           <button type="button" className={btn.primary} disabled={!canPublish || !!busy} onClick={() => act("publish")}>
             {busy === "publish" ? "Publishing…" : "Publish exam"}

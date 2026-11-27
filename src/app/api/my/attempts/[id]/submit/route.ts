@@ -5,7 +5,7 @@ import { answerBatchSchema, submitAttempt } from "@/lib/attempts/workspace";
 
 // POST /api/my/attempts/:id/submit { answers: [...final unsaved changes] }  (idempotent)
 export const POST = handler<{ params: Promise<{ id: string }> }>(async (req, ctx) => {
-  const user = await requireRole("CANDIDATE");
+  const user = await requireRole("CANDIDATE", "EXAMINER", "ADMIN");
   const id = await idParam(ctx, "Attempt");
   return ok(await submitAttempt(user, id, await parseBody(req, answerBatchSchema)));
 });

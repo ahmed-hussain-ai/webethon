@@ -64,6 +64,7 @@ export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
     shuffleOptions: exam.shuffleOptions,
     multiSelectRule: exam.multiSelectRule,
     autoCheckWritten: exam.autoCheckWritten,
+    requireFullscreen: exam.requireFullscreen,
   }));
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
   const [submitted, setSubmitted] = useState(false);
@@ -203,6 +204,8 @@ export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
             label="Shuffle question order" description="Each candidate gets the same questions in a different order." />
           <Toggle checked={f.shuffleOptions} disabled={frozen} onChange={(v) => set("shuffleOptions", v)}
             label="Shuffle answer options" description="Options of objective questions appear in a different order for each candidate. Marking is unaffected." />
+          <Toggle checked={f.requireFullscreen} disabled={frozen} onChange={(v) => set("requireFullscreen", v)}
+            label="Require fullscreen" description="Candidates must stay in fullscreen; leaving it is recorded for your review. Tab switches, window switches and copy/paste are always recorded. Devices without fullscreen support are exempt." />
         </section>
       </fieldset>
 

@@ -30,7 +30,8 @@ async function ownAttempt(user: CurrentUser, attemptId: string) {
     where: { id: attemptId },
     select: { id: true, userId: true, isSandbox: true, status: true, deadlineAt: true, examId: true },
   });
-  if (!a || a.userId !== user.id || a.isSandbox) throw new ApiError(404, "NOT_FOUND", "Attempt not found");
+  // Own attempts only. Sandbox (preview) attempts belong to the examiner who started them.
+  if (!a || a.userId !== user.id) throw new ApiError(404, "NOT_FOUND", "Attempt not found");
   return a;
 }
 
@@ -41,8 +42,8 @@ export async function getPaper(user: CurrentUser, attemptId: string) {
   const a = await db.attempt.findUniqueOrThrow({
     where: { id: attemptId },
     select: {
-      id: true, status: true, startedAt: true, deadlineAt: true, submittedAt: true, totalMarks: true,
-      exam: { select: { id: true, title: true, instructions: true, multiSelectRule: true } },
+      id: true, status: true, startedAt: true, deadlineAt: true, submittedAt: true, totalMarks: true, scratchpad: true, isSandbox: true, objectiveScore: true,
+      exam: { select: { id: true, title: true, instructions: true, multiSelectRule: true, settings: true } },
       questions: { orderBy: { orderIndex: "asc" }, select: { id: true, orderIndex: true, marks: true, negativeMarks: true, snapshot: true } },
       answers: { select: { attemptQuestionId: true, selectedOptionIds: true, textAnswer: true, markedForReview: true, clientSeq: true, savedAt: true } },
     },
@@ -50,8 +51,12 @@ export async function getPaper(user: CurrentUser, attemptId: string) {
   const byQ = new Map(a.answers.map((x) => [x.attemptQuestionId, x]));
   return {
     id: a.id, status: a.status, startedAt: a.startedAt.toISOString(), deadlineAt: a.deadlineAt.toISOString(),
-    submittedAt: a.submittedAt?.toISOString() ?? null, totalMarks: Number(a.totalMarks),
-    exam: { id: a.exam.id, title: a.exam.title, instructions: a.exam.instructions, multiSelectRule: a.exam.multiSelectRule },
+    submittedAt: a.submittedAt?.toISOString() ?? null, totalMarks: Number(a.totalMarks), scratchpad: a.scratchpad ?? "",
+    isSandbox: a.isSandbox, previewScore: a.isSandbox && a.objectiveScore !== null ? Number(a.objectiveScore) : null,
+    exam: {
+      id: a.exam.id, title: a.exam.title, instructions: a.exam.instructions, multiSelectRule: a.exam.multiSelectRule,
+      requireFullscreen: !!(a.exam.settings as { requireFullscreen?: boolean })?.requireFullscreen,
+    },
     serverNow: new Date().toISOString(),
     questions: a.questions.map((q) => {
       const s = q.snapshot as Snapshot;

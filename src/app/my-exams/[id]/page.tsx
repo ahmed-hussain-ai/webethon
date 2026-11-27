@@ -46,6 +46,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
               <li>You get one attempt. Once started, the timer keeps running even if you close the page or lose connection.</li>
               <li>The exam is submitted automatically when your time runs out or the exam closes, whichever comes first.</li>
               <li>Multiple-select questions: {MULTI_RULE_LABEL[e.multiSelectRule].toLowerCase()}.</li>
+              <li>For fairness, leaving the exam tab, switching windows, copy/paste{e.requireFullscreen ? ", leaving fullscreen" : ""} and connection drops are recorded for your examiner to review. No camera or microphone is used.</li>
             </ul>
           </div>
         </section>

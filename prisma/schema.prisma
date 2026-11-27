@@ -77,6 +77,23 @@ enum AttemptStatus {
   AUTO_SUBMITTED // deadline reached
 }
 
+enum AttemptEventType {
+  TAB_HIDDEN
+  WINDOW_BLUR
+  FULLSCREEN_EXIT
+  COPY
+  PASTE
+  CONNECTION_LOST
+  CONNECTION_RESTORED
+  RESUMED
+}
+
+enum EventReview {
+  UNREVIEWED
+  NOTED
+  DISMISSED
+}
+
 enum EnrollmentStatus {
   ACTIVE
   REVOKED
@@ -227,10 +244,11 @@ model Exam {
   createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  createdBy   User           @relation(fields: [createdById], references: [id], onDelete: Restrict)
-  questions   ExamQuestion[]
-  enrollments Enrollment[]
-  attempts    Attempt[]
+  createdBy     User           @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  questions     ExamQuestion[]
+  enrollments   Enrollment[]
+  attempts      Attempt[]
+  announcements Announcement[]
 
   @@index([createdById])
   @@index([status, startAt])
@@ -293,6 +311,7 @@ model Attempt {
   autoGradedAt   DateTime?     @map("auto_graded_at") @db.Timestamptz(3)
   totalScore     Decimal?      @map("total_score") @db.Decimal(7, 2) // sum of final marks, never below 0
   pendingCount   Int           @default(0) @map("pending_count") // answers still needing a mark
+  scratchpad     String? // candidate rough work (4.8); private, never marked
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 
   exam      Exam              @relation(fields: [examId], references: [id], onDelete: Restrict)
@@ -300,6 +319,7 @@ model Attempt {
   questions AttemptQuestion[]
   answers   Answer[]
   reports   ResultReport[]
+  events    AttemptEvent[]
 
   @@index([examId, status])
   @@index([userId])
@@ -371,4 +391,37 @@ model ResultReport {
 
   @@index([attemptId])
   @@map("result_reports")
+}
+
+// Integrity / connectivity signals from the candidate's browser (PDF 3.6). These are
+// INDICATORS for the examiner to review, never proof of misconduct.
+model AttemptEvent {
+  id           String           @id @default(uuid()) @db.Uuid
+  attemptId    String           @map("attempt_id") @db.Uuid
+  type         AttemptEventType
+  details      Json             @default("{}")
+  clientTime   DateTime?        @map("client_time") @db.Timestamptz(3)
+  serverTime   DateTime         @default(now()) @map("server_time") @db.Timestamptz(3)
+  reviewStatus EventReview      @default(UNREVIEWED) @map("review_status")
+  reviewedById String?          @map("reviewed_by") @db.Uuid
+  reviewNote   String?          @map("review_note") @db.VarChar(500)
+
+  attempt Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId, serverTime])
+  @@map("attempt_events")
+}
+
+// Message from the examiner to everyone sitting an exam (shown live in the workspace).
+model Announcement {
+  id          String   @id @default(uuid()) @db.Uuid
+  examId      String   @map("exam_id") @db.Uuid
+  createdById String   @map("created_by") @db.Uuid
+  message     String   @db.VarChar(500)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@index([examId, createdAt])
+  @@map("announcements")
 }

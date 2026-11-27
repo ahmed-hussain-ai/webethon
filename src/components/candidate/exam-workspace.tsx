@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Paper } from "@/lib/attempts/workspace";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { Announcements, FullscreenGate, PrefsMenu, Scratchpad, useIntegrity, type Prefs } from "./workspace-extras";
 
 type Q = Paper["questions"][number];
 type Ans = { selectedOptionIds: string[]; textAnswer: string; markedForReview: boolean; seq: number };
@@ -33,7 +33,12 @@ function store(attemptId: string) {
   };
 }
 
-export function ExamWorkspace({ paper }: { paper: Paper }) {
+const FONT = { SMALL: "0.9rem", MEDIUM: "1rem", LARGE: "1.15rem", XLARGE: "1.3rem" } as const;
+
+export function ExamWorkspace({ paper, initialPrefs }: { paper: Paper; initialPrefs: Prefs }) {
+  const [prefs, setPrefs] = useState<Prefs>(initialPrefs);
+  const [scratchOpen, setScratchOpen] = useState(false);
+  const { needFullscreen, enterFullscreen } = useIntegrity(paper.id, paper.exam.requireFullscreen, paper.questions.some((q) => q.answer));
   const local = useMemo(() => store(paper.id), [paper.id]);
   const offset = useRef(0); // server − device clock, measured on mount
   const deadline = useRef(Date.parse(paper.deadlineAt));
@@ -73,18 +78,18 @@ export function ExamWorkspace({ paper }: { paper: Paper }) {
       local.clear();
       pending.current = {};
       setDone({ auto });
-      setTimeout(() => window.location.replace(`/my-exams/${paper.exam.id}`), 2500);
+      setTimeout(() => window.location.replace(paper.isSandbox ? `/attempts/${paper.id}` : `/my-exams/${paper.exam.id}`), 2500);
     } catch (e) {
       finishing.current = false;
       if (auto) {
         // The server closes the attempt at the deadline anyway; answers saved before it count.
         setDone({ auto: true });
-        setTimeout(() => window.location.replace(`/my-exams/${paper.exam.id}`), 4000);
+        setTimeout(() => window.location.replace(paper.isSandbox ? `/attempts/${paper.id}` : `/my-exams/${paper.exam.id}`), 4000);
       } else {
         setSubmitError(e instanceof Error && e.message !== "Failed to fetch" ? e.message : "Couldn't reach the server. Your answers are kept on this device; check your connection and try again.");
       }
     }
-  }, [paper.id, paper.exam.id, local]);
+  }, [paper.id, paper.exam.id, paper.isSandbox, local]);
 
   const flushRef = useRef<() => void>(() => {});
   const flush = useCallback(async () => {
@@ -212,11 +217,11 @@ export function ExamWorkspace({ paper }: { paper: Paper }) {
   }[saveState];
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className={`flex min-h-screen flex-col ${prefs.highContrast ? "hc" : ""}`}>
       <header className="header-band sticky top-0 z-20 shadow-md">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
           <div className="min-w-0 flex-1">
-            <p className="eyebrow text-on-header-muted">Exam in progress</p>
+            <p className="eyebrow text-on-header-muted">{paper.isSandbox ? <span className="rounded bg-[#f0c56a] px-1.5 py-0.5 text-[#3a2a00]">Preview · not recorded</span> : "Exam in progress"}</p>
             <h1 className="truncate font-serif text-lg">{paper.exam.title}</h1>
           </div>
           <p role="status" aria-live="polite" className={`flex items-center gap-2 text-sm font-semibold ${status.cls}`}>
@@ -227,7 +232,7 @@ export function ExamWorkspace({ paper }: { paper: Paper }) {
             <p className="eyebrow text-[0.6rem] opacity-80">Time left</p>
             <p className="font-mono text-2xl font-bold tabular-nums" aria-hidden>{fmt(left)}</p>
           </div>
-          <ThemeToggle />
+          <PrefsMenu prefs={prefs} onChange={setPrefs} />
         </div>
         {saveState === "offline" && (
           <p className="bg-[#f0c56a] px-4 py-2 text-center text-sm font-semibold text-[#3a2a00]">
@@ -235,12 +240,14 @@ export function ExamWorkspace({ paper }: { paper: Paper }) {
           </p>
         )}
       </header>
+      <Announcements attemptId={paper.id} />
+      {needFullscreen && <FullscreenGate onEnter={enterFullscreen} />}
       <p className="sr-only" aria-live="assertive">{announce}</p>
 
-      <div className="mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 py-6 lg:grid-cols-[260px_1fr]">
-        <nav aria-label="Questions" className="h-fit rounded-3xl border border-line bg-surface p-4 lg:sticky lg:top-28">
+      <div className={`mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 py-6 ${prefs.navPosition === "LEFT" ? "lg:grid-cols-[260px_1fr]" : prefs.navPosition === "RIGHT" ? "lg:grid-cols-[1fr_260px]" : ""}`}>
+        <nav aria-label="Questions" className={`h-fit rounded-3xl border border-line bg-surface p-4 ${prefs.navPosition === "BOTTOM" ? "order-2" : "lg:sticky lg:top-28"} ${prefs.navPosition === "RIGHT" ? "lg:order-2" : ""}`}>
           <p className="mb-3 text-sm"><strong>{counts.answered}</strong> of {counts.total} answered{counts.marked ? <> · <strong>{counts.marked}</strong> to review</> : null}</p>
-          <ol className="grid grid-cols-6 gap-2 lg:grid-cols-5">
+          <ol className={`grid gap-2 ${prefs.navPosition === "BOTTOM" ? "grid-cols-6 sm:grid-cols-10 lg:grid-cols-15" : "grid-cols-6 lg:grid-cols-5"}`}>
             {paper.questions.map((x, i) => {
               const s = answers[x.id];
               const ans = isAnswered(s);
@@ -270,8 +277,8 @@ export function ExamWorkspace({ paper }: { paper: Paper }) {
           </button>
         </nav>
 
-        <main>
-          <article aria-labelledby="q-title" className="rounded-3xl border border-line bg-surface">
+        <main className={prefs.layout === "SPLIT" ? "grid gap-6 xl:grid-cols-[1fr_380px]" : ""}>
+          <article aria-labelledby="q-title" className="h-fit rounded-3xl border border-line bg-surface" style={{ fontSize: FONT[prefs.fontSize] }}>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4">
               <p id="q-title" className="eyebrow text-muted">Question {current + 1} of {paper.questions.length}</p>
               <p className="font-mono text-sm">
@@ -280,7 +287,7 @@ export function ExamWorkspace({ paper }: { paper: Paper }) {
               </p>
             </div>
             <div className="space-y-5 px-6 py-6">
-              <p className="whitespace-pre-wrap break-words text-lg leading-relaxed">{q.text}</p>
+              <p className="whitespace-pre-wrap break-words text-[1.15em] leading-relaxed">{q.text}</p>
 
               {q.type === "WRITTEN" ? (
                 <div>
@@ -288,7 +295,7 @@ export function ExamWorkspace({ paper }: { paper: Paper }) {
                   <textarea
                     id={`ans-${q.id}`} rows={10} value={a.textAnswer} maxLength={20000}
                     onChange={(e) => change(q.id, { textAnswer: e.target.value }, true)}
-                    className="w-full resize-y rounded-2xl border border-line bg-surface-2 p-4 text-base leading-relaxed focus:border-brand focus:bg-surface focus:outline-none focus:ring-4 focus:ring-[var(--ring)]"
+                    className="w-full resize-y rounded-2xl border border-line bg-surface-2 p-4 text-[1em] leading-relaxed focus:border-brand focus:bg-surface focus:outline-none focus:ring-4 focus:ring-[var(--ring)]"
                   />
                   <p className="mt-1 text-right font-mono text-xs text-muted">{a.textAnswer.length.toLocaleString()} / 20,000</p>
                 </div>
@@ -337,6 +344,16 @@ export function ExamWorkspace({ paper }: { paper: Paper }) {
               </div>
             </div>
           </article>
+          {prefs.layout === "SPLIT" ? (
+            <Scratchpad attemptId={paper.id} initial={paper.scratchpad} className="xl:sticky xl:top-28 xl:h-[calc(100vh-9rem)]" />
+          ) : (
+            <div className="mt-4">
+              <button type="button" aria-expanded={scratchOpen} onClick={() => setScratchOpen((o) => !o)} className="rounded-full border border-line-strong px-4 py-2 text-sm font-semibold hover:border-brand">
+                {scratchOpen ? "Hide scratchpad" : "Open scratchpad"}
+              </button>
+              {scratchOpen && <Scratchpad attemptId={paper.id} initial={paper.scratchpad} className="mt-3 h-72" />}
+            </div>
+          )}
         </main>
       </div>
 

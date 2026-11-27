@@ -148,3 +148,13 @@ body {
     transition: none !important;
   }
 }
+
+/* High-contrast exam workspace (4.7): stronger borders and full-strength text. */
+.hc {
+  --border: var(--text);
+  --border-strong: var(--text);
+  --muted: var(--text);
+}
+.hc :is(input, textarea, button, label) {
+  border-width: 2px;
+}

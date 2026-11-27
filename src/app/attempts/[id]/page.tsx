@@ -7,18 +7,32 @@ import { LocalTime } from "@/components/local-time";
 import { btn } from "@/components/staff-shell";
 import { requirePageRole } from "@/lib/auth/page-guards";
 import { getPaper } from "@/lib/attempts/workspace";
+import { getPrefs } from "@/lib/preferences/service";
 import { ApiError } from "@/lib/api";
 
 export const metadata = { title: "Exam · SecureExam" };
 
 async function Content({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requirePageRole("CANDIDATE");
+  const user = await requirePageRole("CANDIDATE", "EXAMINER", "ADMIN");
   const paper = await getPaper(user, (await params).id).catch((err) => {
     if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
   });
-  if (paper.status === "IN_PROGRESS") return <ExamWorkspace paper={paper} />;
+  if (paper.status === "IN_PROGRESS") return <ExamWorkspace paper={paper} initialPrefs={await getPrefs(user.id)} />;
 
+  if (paper.isSandbox) {
+    return (
+      <div className="grid min-h-screen place-items-center p-6">
+        <section className="w-full max-w-md space-y-4 rounded-3xl border border-line bg-surface p-8 text-center">
+          <p className="eyebrow text-muted">Preview finished</p>
+          <h1 className="font-display text-3xl">{paper.exam.title}</h1>
+          <p className="text-sm">Automatic score on objective questions: <strong className="font-mono">{paper.previewScore ?? 0}</strong> / {paper.totalMarks}</p>
+          <p className="text-sm text-muted">This preview was not recorded: it doesn&apos;t appear in results, statistics or analytics.</p>
+          <Link href={`/exams/${paper.exam.id}/review`} className={btn.primary}>Back to the exam</Link>
+        </section>
+      </div>
+    );
+  }
   const answered = paper.questions.filter((q) => q.answer && (q.answer.selectedOptionIds.length || q.answer.textAnswer?.trim())).length;
   return (
     <CandidateShell name={user.name}>

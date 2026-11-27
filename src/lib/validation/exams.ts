@@ -32,6 +32,7 @@ export const examDetailsSchema = z
     shuffleOptions: z.boolean().default(false),
     multiSelectRule: z.enum(MULTI_SELECT_RULES).default("ALL_OR_NOTHING"),
     autoCheckWritten: z.boolean().default(true),
+    requireFullscreen: z.boolean().default(false),
   })
   .superRefine((d, ctx) => {
     if (d.passMarks > d.totalMarks) ctx.addIssue({ code: "custom", path: ["passMarks"], message: "Pass marks cannot be more than total marks" });

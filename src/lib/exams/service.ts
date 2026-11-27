@@ -84,6 +84,7 @@ export async function getExam(actor: CurrentUser, id: string) {
     durationMinutes: e.durationMinutes, totalMarks: n(e.totalMarks), passMarks: n(e.passMarks),
     shuffleQuestions: e.shuffleQuestions, shuffleOptions: e.shuffleOptions,
     multiSelectRule: e.multiSelectRule, autoCheckWritten: e.autoCheckWritten,
+    requireFullscreen: !!(e.settings as { requireFullscreen?: boolean })?.requireFullscreen,
     status: e.status, phase, publishedAt: e.publishedAt?.toISOString() ?? null,
     updatedAt: e.updatedAt.toISOString(), ownerName: e.createdBy.name,
     questions, assignedMarks: Math.round(assignedMarks * 100) / 100,
@@ -123,13 +124,15 @@ export async function updateExamDetails(actor: CurrentUser, id: string, input: D
       input.startAt?.getTime() === exam.startAt?.getTime() && input.durationMinutes === exam.durationMinutes &&
       input.totalMarks === n(exam.totalMarks) && input.passMarks === n(exam.passMarks) &&
       input.multiSelectRule === exam.multiSelectRule && input.autoCheckWritten === exam.autoCheckWritten &&
-      input.shuffleQuestions === exam.shuffleQuestions && input.shuffleOptions === exam.shuffleOptions;
+      input.shuffleQuestions === exam.shuffleQuestions && input.shuffleOptions === exam.shuffleOptions &&
+      input.requireFullscreen === !!(exam.settings as { requireFullscreen?: boolean })?.requireFullscreen;
     if (!same || !input.endAt || input.endAt < exam.endAt!) {
       throw new ApiError(409, "EXAM_LOCKED", "The exam is in progress: only the title, texts and extending the end time can change.");
     }
   }
-  const { updatedAt, ...data } = input;
-  const res = await db.exam.updateMany({ where: { id, updatedAt: new Date(updatedAt) }, data: { ...data, updatedAt: new Date() } });
+  const { updatedAt, requireFullscreen, ...data } = input;
+  const settings = { ...((exam.settings as object) ?? {}), requireFullscreen };
+  const res = await db.exam.updateMany({ where: { id, updatedAt: new Date(updatedAt) }, data: { ...data, settings, updatedAt: new Date() } });
   if (res.count === 0) throw CONFLICT();
 }
 
