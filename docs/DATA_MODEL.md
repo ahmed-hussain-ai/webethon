@@ -1,14 +1,14 @@
-# Data Model & Business Rules (Part 1: users, question bank, exams)
+# Data Model & Business Rules (17 tables)
 
 Covers PDF sections **3.1 Auth**, **3.2 Exam management**, **3.3 Question bank**, **3.4 Candidate management**, **4.7 Workspace preferences**, and the **Data integrity** paragraph of section 06.
 
 Where each rule lives:
-- **DB**: enforced by PostgreSQL (CHECK constraint or trigger in `prisma/migrations/*_init_core/migration.sql`). Even a buggy API cannot break it.
-- **APP**: must be enforced in the API layer (still to build).
+- **DB**: enforced by PostgreSQL (CHECK constraints and triggers in `prisma/migrations/*/migration.sql`). Even a buggy API cannot break it.
+- **APP**: enforced in the API layer (`src/lib/**/service.ts`).
 
 ---
 
-## 1. Tables (8)
+## 1. Core tables (8)
 
 | Table | Purpose |
 |---|---|
@@ -20,6 +20,33 @@ Where each rule lives:
 | `exams` | Exam config, schedule, marking rule, results state |
 | `exam_questions` | Which questions are in an exam, with per-exam marks and negative marks |
 | `enrollments` | Which candidate may sit which exam |
+
+## 1b. Tables added later (9)
+
+| Table | Purpose |
+|---|---|
+| `sessions` | One row per login; logout revokes it server-side (a copied cookie stops working) |
+| `attempts` | One sitting of an exam: server-set deadline, status, totals, scratchpad, sandbox flag (examiner preview) |
+| `attempt_questions` | The candidate's **frozen paper**: order, option order, marks and a snapshot incl. correct answers |
+| `answers` | Answer per question: selection/text, review flag, autosave sequence, auto/manual/AI marks, feedback |
+| `attempt_events` | Integrity/connectivity signals (tab switch, paste, fullscreen exit, connection) with examiner review |
+| `announcements` | Examiner messages shown live to candidates |
+| `result_reports` | Issued PDF reports: public verification code + content hash (superseded when marks change) |
+| `disputes` | Candidate disputes (5.4): category, explanation, status, response, marks/score before & after |
+| `audit_logs` | Append-only record of publishing, disputes and user changes |
+
+Key DB rules on these tables:
+- **One real attempt** per candidate per exam (partial unique index; previews excluded).
+- An attempt can only start for an **active, enrolled candidate**, on a **published** exam, **inside its window**.
+- The deadline never exceeds the duration or the closing time, and can **never be shortened**. A submitted attempt can **never be reopened**.
+- The frozen paper (`attempt_questions`) can't be edited.
+- Extending the closing time gives back time only to attempts that were cut short, never beyond the duration.
+- Answers change only while the attempt runs and **before the deadline (+2 s)**. After submission only marks can be written.
+- Manual marks are 0…question marks. **After results are published, marks change only through a dispute.**
+- Results can't be published with attempts still running or answers unmarked.
+- One open dispute per question per attempt; resolving needs a written response.
+- Audit log rows can't be updated or deleted.
+- At most one current (not superseded) report per attempt.
 
 ## 2. Changes vs the original plan (and why)
 
@@ -73,7 +100,7 @@ Where each rule lives:
 - Only users with role CANDIDATE can be enrolled; only EXAMINER/ADMIN can enroll. **DB**
 - `status = REVOKED` ⇔ `revoked_at` is set. **DB**
 
-## 4. Rules the API must still enforce (APP)
+## 4. Rules enforced by the API (APP)
 
 | Rule | Note |
 |---|---|
@@ -90,9 +117,11 @@ Where each rule lives:
 | Partial multi-select marking: `marks × max(0, (correct picked − wrong picked) / total correct)`, rounded to 2 dp | Documented so judges can verify |
 | Translate DB error codes (`INVALID_OPTIONS`, `EXAM_LOCKED`, `PUBLISH_BLOCKED`, …) into clear UI messages | Error messages begin with a stable code |
 
-## 5. Open decisions (for the attempts phase)
-- **Revoking an enrollment after the candidate has started**: proposal: revoke blocks new entry only; an in-progress attempt is finalised normally and the examiner sees a flag.
-- **Extending `end_at` during an exam**: allowed. Proposal: it does **not** extend deadlines of attempts already running (fair to everyone).
+## 5. Decisions made
+- **Candidate removed mid-exam:** their running attempt continues; removal only blocks new starts.
+- **Closing time extended mid-exam:** running attempts cut short by the old closing time get the time back, never more than the duration.
+- **Blank written answer:** scores 0 automatically, so it isn't queued for marking.
+- **Negative totals:** an attempt's total never goes below 0.
 
 ## 6. Demo data (`npm run db:seed`)
 Password for every account: **`Password@123`**
@@ -103,4 +132,4 @@ Password for every account: **`Password@123`**
 | Examiner | examiner@exam.test, examiner2@exam.test |
 | Candidate | candidate1@exam.test … candidate5@exam.test |
 
-Exams: **Web Fundamentals Quiz** (ongoing, shuffle + partial marking, 4 enrolled), **Database Systems Midterm** (upcoming, starts in 24 h), **Security Basics** (draft).
+Exams: **Web Fundamentals Quiz** (ongoing, shuffle + partial marking, 4 enrolled), **Database Systems Midterm** (upcoming, starts in 24 h), **Security Basics** (draft, examiner 2), **Programming Fundamentals Final** (completed 2 days ago, results published, 4 attempts, 1 absent, an open dispute, recorded incidents).

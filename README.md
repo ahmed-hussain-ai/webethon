@@ -137,6 +137,7 @@ Production: `npm run build && npm start`. Behind nginx/Vercel set `TRUST_PROXY="
 - [docs/EXAMS.md](docs/EXAMS.md): exam builder, lifecycle, enrollment
 - [docs/CANDIDATE.md](docs/CANDIDATE.md): candidate flow and starting attempts
 - [docs/WORKSPACE.md](docs/WORKSPACE.md): exam workspace, autosave, deadline, auto-marking
+- [docs/DEMO.md](docs/DEMO.md): 15-minute demo script and likely judge questions
 
 ## AI marking (optional)
 The rubric lives in `src/lib/results/llm.ts` (`RUBRIC`).
