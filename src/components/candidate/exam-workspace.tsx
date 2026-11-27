@@ -197,6 +197,19 @@ export function ExamWorkspace({ paper, initialPrefs }: { paper: Paper; initialPr
   }, [answers, paper.questions]);
   const lowTime = left <= 5 * 60_000;
 
+  // Keyboard shortcuts (Alt so they never clash with typing): Alt+←/→ previous/next, Alt+R mark for review.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey || done) return;
+      const n = paper.questions.length;
+      if (e.key === "ArrowRight") { e.preventDefault(); setCurrent((c) => Math.min(n - 1, c + 1)); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); setCurrent((c) => Math.max(0, c - 1)); }
+      else if (e.code === "KeyR") { e.preventDefault(); change(q.id, { markedForReview: !a.markedForReview }); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   if (done) {
     return (
       <div className="grid min-h-screen place-items-center p-6">
@@ -335,6 +348,7 @@ export function ExamWorkspace({ paper, initialPrefs }: { paper: Paper; initialPr
                 <input type="checkbox" checked={a.markedForReview} onChange={(e) => change(q.id, { markedForReview: e.target.checked })} className="h-4 w-4 accent-[#e0a030]" />
                 Mark for review
               </label>
+              <span className="hidden text-xs text-muted lg:inline" aria-hidden><kbd className="font-mono">Alt</kbd>+<kbd className="font-mono">←/→</kbd> move · <kbd className="font-mono">Alt</kbd>+<kbd className="font-mono">R</kbd> review</span>
               <div className="flex gap-2">
                 <button type="button" disabled={current === 0} onClick={() => setCurrent((c) => c - 1)} className="rounded-full border border-line-strong px-5 py-2 text-sm font-semibold hover:border-brand disabled:opacity-40">← Previous</button>
                 {current < paper.questions.length - 1 ? (

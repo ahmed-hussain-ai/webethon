@@ -6,6 +6,16 @@ import { loginSchema } from "@/lib/validation/auth";
 import { homeFor, postJson, zodFieldErrors, type SessionUser } from "@/lib/client/api";
 import { Field, FormAlert, SubmitButton } from "@/components/ui";
 
+// Demo builds (NEXT_PUBLIC_DEMO_ACCOUNTS=true) show one-click test accounts for judges.
+const DEMO = process.env.NEXT_PUBLIC_DEMO_ACCOUNTS === "true";
+const DEMO_ACCOUNTS = [["Administrator", "admin@exam.test"], ["Examiner", "examiner@exam.test"], ["Candidate", "candidate1@exam.test"]] as const;
+function fillDemo(form: HTMLFormElement | null, email: string) {
+  if (!form) return;
+  (form.elements.namedItem("email") as HTMLInputElement).value = email;
+  (form.elements.namedItem("password") as HTMLInputElement).value = "Password@123";
+  form.requestSubmit();
+}
+
 export function LoginForm() {
   const router = useRouter();
   const [fields, setFields] = useState<Record<string, string>>({});
@@ -42,6 +52,17 @@ export function LoginForm() {
       <Field label="Email" name="email" type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" error={fields.email} autoFocus />
       <Field label="Password" name="password" type="password" autoComplete="current-password" error={fields.password} />
       <SubmitButton pending={pending}>{pending ? "Signing in…" : "Sign in"}</SubmitButton>
+      {DEMO && (
+        <div className="border-t border-line pt-3">
+          <p className="mb-2 text-xs font-semibold text-muted">Demo accounts: click to fill</p>
+          <div className="flex flex-wrap gap-2">
+            {DEMO_ACCOUNTS.map(([label, email]) => (
+              <button key={email} type="button" onClick={(e) => fillDemo(e.currentTarget.form, email)}
+                className="rounded-full border border-line px-3 py-1 text-xs font-semibold hover:border-brand hover:text-brand">{label}</button>
+            ))}
+          </div>
+        </div>
+      )}
       <p className="text-center text-xs text-muted">
         Forgot your password? Ask your administrator to reset it.
       </p>
