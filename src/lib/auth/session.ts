@@ -49,7 +49,9 @@ export async function createSession(
 
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true, // page scripts cannot read it
-    secure: process.env.NODE_ENV === "production",
+    // HTTPS-only in production. COOKIE_SECURE="false" is only for serving over plain http
+    // (e.g. a temporary IP:port deployment before a domain + certificate exist).
+    secure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === "true" : process.env.NODE_ENV === "production",
     sameSite: "lax", // not sent on cross-site POSTs
     path: "/",
     maxAge: SESSION_TTL_SECONDS,
