@@ -46,7 +46,7 @@ export function ChangePasswordForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} method="post" noValidate className="space-y-5">
+    <form onSubmit={onSubmit} method="post" noValidate className="space-y-3 sm:space-y-4">
       {alert && <FormAlert>{alert}</FormAlert>}
       <Field label="Current password" name="currentPassword" type="password" autoComplete="current-password" error={fields.currentPassword} autoFocus />
       <Field

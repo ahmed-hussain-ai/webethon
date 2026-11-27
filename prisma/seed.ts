@@ -220,6 +220,7 @@ async function seedCompletedExam(examinerId: string, candidateIds: string[], que
       if (ci === 3) await tx.attemptEvent.createMany({ data: [{ attemptId: attempt.id, type: "PASTE", details: { length: 214 }, serverTime: new Date(startedAt.getTime() + 25 * 60_000) }, { attemptId: attempt.id, type: "CONNECTION_LOST", serverTime: new Date(startedAt.getTime() + 30 * 60_000) }, { attemptId: attempt.id, type: "CONNECTION_RESTORED", details: { offlineSeconds: 48 }, serverTime: new Date(startedAt.getTime() + 31 * 60_000) }] });
     }
     await tx.announcement.create({ data: { examId: exam.id, createdById: examinerId, message: "Reminder: multiple-select questions use partial marking.", createdAt: new Date(start.getTime() + 20 * 60_000) } });
+    await tx.auditLog.create({ data: { actorId: examinerId, action: "RESULTS_PUBLISHED", entityType: "exam", entityId: exam.id, createdAt: new Date(end.getTime() + 20 * HOUR), details: { demo: true } } });
   });
 }
 

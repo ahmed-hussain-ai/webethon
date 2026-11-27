@@ -17,18 +17,20 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
   return (
     <StaffShell user={user} active="users">
       <PageTitle eyebrow="Administration" title="Users" />
-      <div className="mb-5 grid grid-cols-3 gap-3 sm:max-w-md">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-2xl border border-line bg-surface px-4 py-3"><p className="eyebrow text-muted">All users</p><p className="font-mono text-2xl font-semibold">{Object.values(data.counts).reduce((s, n) => s + n, 0)}</p></div>
         {(["ADMIN", "EXAMINER", "CANDIDATE"] as const).map((r) => (
-          <div key={r} className="rounded-2xl border border-line bg-surface px-4 py-3"><p className="eyebrow text-muted">{r.toLowerCase()}s</p><p className="font-mono text-2xl font-semibold">{data.counts[r] ?? 0}</p></div>
+          <Link key={r} href={`/admin/users?role=${r}`} className="rounded-2xl border border-line bg-surface px-4 py-3 hover:border-brand"><p className="eyebrow text-muted">{r.toLowerCase()}s</p><p className="font-mono text-2xl font-semibold">{data.counts[r] ?? 0}</p></Link>
         ))}
       </div>
-      <form method="get" role="search" className="mb-5 flex flex-wrap gap-3 rounded-2xl border border-line bg-surface p-4">
+      <UserManager users={data.users} me={user.id} filters={
+      <form method="get" role="search" className="flex flex-wrap gap-3 rounded-2xl border border-line bg-surface p-3">
         <input name="q" defaultValue={q.q ?? ""} placeholder="Search name or email…" aria-label="Search" className={`${sel} min-w-56 flex-1`} />
         <select name="role" defaultValue={q.role ?? ""} aria-label="Role" className={sel}><option value="">All roles</option><option value="ADMIN">Admins</option><option value="EXAMINER">Examiners</option><option value="CANDIDATE">Candidates</option></select>
         <select name="status" defaultValue={q.status ?? ""} aria-label="Status" className={sel}><option value="">Any status</option><option value="active">Active</option><option value="inactive">Deactivated</option></select>
         <button className={btn.primary}>Filter</button>
       </form>
-      <UserManager users={data.users} me={user.id} />
+      } />
       {data.pages > 1 && (
         <nav aria-label="Pages" className="mt-5 flex items-center justify-center gap-3 text-sm">
           {data.page > 1 && <Link className={btn.secondary} href={href(data.page - 1)}>← Previous</Link>}

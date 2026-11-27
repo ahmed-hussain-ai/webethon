@@ -43,19 +43,15 @@ export function SignupForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} method="post" noValidate className="space-y-5">
+    <form onSubmit={onSubmit} method="post" noValidate className="space-y-3 sm:space-y-4">
       {alert && <FormAlert>{alert}</FormAlert>}
       <Field label="Full name" name="name" autoComplete="name" error={fields.name} autoFocus />
       <Field label="Email" name="email" type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" error={fields.email} />
-      <Field
-        label="Password"
-        name="password"
-        type="password"
-        autoComplete="new-password"
-        error={fields.password}
-        hint="At least 8 characters, with a letter and a number."
-      />
-      <Field label="Confirm password" name="confirm" type="password" autoComplete="new-password" error={fields.confirm} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Password" name="password" type="password" autoComplete="new-password" error={fields.password} />
+        <Field label="Confirm password" name="confirm" type="password" autoComplete="new-password" error={fields.confirm} />
+      </div>
+      {!fields.password && <p className="-mt-2 text-xs text-muted">At least 8 characters, with a letter and a number.</p>}
       <SubmitButton pending={pending}>{pending ? "Creating account…" : "Create account"}</SubmitButton>
     </form>
   );

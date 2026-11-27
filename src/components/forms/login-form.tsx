@@ -37,13 +37,13 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} method="post" noValidate className="space-y-5">
+    <form onSubmit={onSubmit} method="post" noValidate className="space-y-3 sm:space-y-4">
       {alert && <FormAlert tone={alert.tone}>{alert.text}</FormAlert>}
       <Field label="Email" name="email" type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" error={fields.email} autoFocus />
       <Field label="Password" name="password" type="password" autoComplete="current-password" error={fields.password} />
       <SubmitButton pending={pending}>{pending ? "Signing in…" : "Sign in"}</SubmitButton>
       <p className="text-center text-xs text-muted">
-        Forgot your password? Contact your examiner or administrator to reset it.
+        Forgot your password? Ask your administrator to reset it.
       </p>
     </form>
   );

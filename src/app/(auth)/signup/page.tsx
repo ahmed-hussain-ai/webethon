@@ -17,7 +17,7 @@ export default function SignupPage() {
       eyebrow="New account"
       title="Create account"
       badge="Candidate"
-      intro="Signing up creates a candidate account. Your examiner enrolls you in exams; examiner and admin accounts are created by an administrator."
+      intro="For candidates. Your examiner enrolls you in exams; staff accounts are created by an administrator."
       footer={
         <>
           Already have an account?{" "}
