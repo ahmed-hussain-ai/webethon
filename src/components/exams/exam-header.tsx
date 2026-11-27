@@ -3,7 +3,7 @@ import type { ExamDetail } from "@/lib/exams/service";
 import { LocalTime } from "@/components/local-time";
 import { PhaseBadge } from "./phase-badge";
 
-export type ExamTab = "settings" | "questions" | "candidates" | "review" | "results";
+export type ExamTab = "settings" | "questions" | "candidates" | "review" | "results" | "disputes";
 
 export function ExamHeader({ exam, tab }: { exam: ExamDetail; tab: ExamTab }) {
   const blocking = exam.checks.filter((c) => c.blocking && !c.ok).length;
@@ -13,6 +13,7 @@ export function ExamHeader({ exam, tab }: { exam: ExamDetail; tab: ExamTab }) {
     { key: "candidates", href: `/exams/${exam.id}/candidates`, label: "Candidates", badge: String(exam.activeEnrollments) },
     { key: "review", href: `/exams/${exam.id}/review`, label: exam.status === "DRAFT" ? "Review & publish" : "Review", badge: exam.status === "DRAFT" && blocking ? `${blocking} to fix` : undefined },
     ...(exam.status === "PUBLISHED" ? [{ key: "results" as const, href: `/exams/${exam.id}/results`, label: exam.phase === "COMPLETED" ? "Results" : "Live & results" }] : []),
+    ...(exam.resultsPublished ? [{ key: "disputes" as const, href: `/exams/${exam.id}/disputes`, label: "Disputes", badge: exam.openDisputes ? `${exam.openDisputes} open` : undefined }] : []),
   ];
   return (
     <div className="mb-6">
@@ -52,7 +53,7 @@ export function ExamHeader({ exam, tab }: { exam: ExamDetail; tab: ExamTab }) {
                 >
                   {t.label}
                   {t.badge && (
-                    <span className={`rounded-full px-2 py-0.5 font-mono text-[0.7rem] ${tab === t.key ? "bg-white/20" : t.badge.includes("fix") ? "bg-danger-soft text-danger" : "bg-surface"}`}>
+                    <span className={`rounded-full px-2 py-0.5 font-mono text-[0.7rem] ${tab === t.key ? "bg-white/20" : /fix|open/.test(t.badge) ? "bg-danger-soft text-danger" : "bg-surface"}`}>
                       {t.badge}
                     </span>
                   )}

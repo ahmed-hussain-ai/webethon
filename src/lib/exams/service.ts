@@ -70,6 +70,7 @@ export async function getExam(actor: CurrentUser, id: string) {
       _count: { select: { enrollments: { where: { status: "ACTIVE" } } } },
     },
   });
+  const openDisputes = await db.dispute.count({ where: { attempt: { examId: id }, status: { in: ["OPEN", "UNDER_REVIEW"] } } });
   const questions = e.questions.map((eq) => ({
     questionId: eq.questionId, marks: n(eq.marks), negativeMarks: n(eq.negativeMarks),
     type: eq.question.type, text: eq.question.text, difficulty: eq.question.difficulty,
@@ -88,7 +89,7 @@ export async function getExam(actor: CurrentUser, id: string) {
     status: e.status, phase, publishedAt: e.publishedAt?.toISOString() ?? null,
     updatedAt: e.updatedAt.toISOString(), ownerName: e.createdBy.name,
     questions, assignedMarks: Math.round(assignedMarks * 100) / 100,
-    activeEnrollments: e._count.enrollments,
+    activeEnrollments: e._count.enrollments, openDisputes, resultsPublished: e.resultsStatus === "PUBLISHED",
     // What may change right now (the DB enforces the same rules).
     canEditQuestions: e.status === "DRAFT",
     canEditSettings: phase === "DRAFT" || phase === "SCHEDULED",

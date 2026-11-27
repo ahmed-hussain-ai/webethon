@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CandidateShell } from "@/components/candidate/candidate-shell";
 import { LocalTime } from "@/components/local-time";
+import { CandidateDisputes } from "@/components/disputes/candidate-disputes";
 import { ShellSkeleton, btn } from "@/components/staff-shell";
 import { requirePageRole } from "@/lib/auth/page-guards";
 import { getMyResult } from "@/lib/results/service";
@@ -37,6 +38,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
           <span className="text-muted">Includes a verification code anyone can check at /verify.</span>
         </div>
       </section>
+      <div className="mb-6"><CandidateDisputes attemptId={r.attemptId} questions={r.questions.map((q) => ({ id: q.attemptQuestionId, number: q.number }))} /></div>
       <div className="space-y-4">
         {r.questions.map((q) => (
           <article key={q.attemptQuestionId} className="rounded-3xl border border-line bg-surface">

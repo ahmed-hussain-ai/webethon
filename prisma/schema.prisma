@@ -94,6 +94,20 @@ enum EventReview {
   DISMISSED
 }
 
+enum DisputeCategory {
+  GRADING_ERROR
+  AMBIGUOUS_QUESTION
+  TECHNICAL_ISSUE
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+}
+
 enum EnrollmentStatus {
   ACTIVE
   REVOKED
@@ -320,6 +334,7 @@ model Attempt {
   answers   Answer[]
   reports   ResultReport[]
   events    AttemptEvent[]
+  disputes  Dispute[]
 
   @@index([examId, status])
   @@index([userId])
@@ -424,4 +439,45 @@ model Announcement {
 
   @@index([examId, createdAt])
   @@map("announcements")
+}
+
+// Trust & dispute resolution (innovation 5.4). Raised by the candidate after results are
+// published, within the exam's dispute window; resolved by the examiner with a required note.
+model Dispute {
+  id                String          @id @default(uuid()) @db.Uuid
+  attemptId         String          @map("attempt_id") @db.Uuid
+  attemptQuestionId String?         @map("attempt_question_id") @db.Uuid // null = about the whole result
+  raisedById        String          @map("raised_by") @db.Uuid
+  category          DisputeCategory
+  description       String          @db.VarChar(2000)
+  status            DisputeStatus   @default(OPEN)
+  marksBefore       Decimal?        @map("marks_before") @db.Decimal(6, 2)
+  marksAfter        Decimal?        @map("marks_after") @db.Decimal(6, 2)
+  scoreBefore       Decimal?        @map("score_before") @db.Decimal(7, 2)
+  scoreAfter        Decimal?        @map("score_after") @db.Decimal(7, 2)
+  appliedToAll      Int             @default(0) @map("applied_to_all") // other candidates corrected too
+  resolvedById      String?         @map("resolved_by") @db.Uuid
+  resolutionNote    String?         @map("resolution_note") @db.VarChar(2000)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  resolvedAt        DateTime?       @map("resolved_at") @db.Timestamptz(3)
+
+  attempt Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([status])
+  @@map("disputes")
+}
+
+// Append-only record of sensitive actions (who changed what, when).
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String   @map("actor_id") @db.Uuid
+  action     String   @db.VarChar(60)
+  entityType String   @map("entity_type") @db.VarChar(40)
+  entityId   String   @map("entity_id") @db.Uuid
+  details    Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
 }

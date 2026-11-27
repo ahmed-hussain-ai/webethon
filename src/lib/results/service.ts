@@ -261,7 +261,10 @@ export async function publishResults(actor: CurrentUser, examId: string) {
   const r = await getResults(actor, examId);
   if (r.exam.resultsStatus === "PUBLISHED") throw new ApiError(409, "ALREADY_PUBLISHED", "Results are already published.");
   if (!r.canPublish) throw new ApiError(409, "RESULTS_BLOCKED", `Can't publish yet: ${r.blockers.join("; ")}.`);
-  await db.exam.update({ where: { id: examId }, data: { resultsStatus: "PUBLISHED", resultsPublishedAt: new Date() } });
+  await db.$transaction([
+    db.exam.update({ where: { id: examId }, data: { resultsStatus: "PUBLISHED", resultsPublishedAt: new Date() } }),
+    db.auditLog.create({ data: { actorId: actor.id, action: "RESULTS_PUBLISHED", entityType: "exam", entityId: examId, details: { summary: r.summary } } }),
+  ]);
 }
 
 /** Candidate's own published result (404 until published; never another candidate's). */
