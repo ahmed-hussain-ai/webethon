@@ -12,7 +12,7 @@ import { llmConfigured } from "@/lib/results/llm";
 import { ApiError } from "@/lib/api";
 import { loadExamPage } from "../../shared";
 
-export const metadata = { title: "Mark attempt · SecureExam" };
+export const metadata = { title: "Mark attempt · Examora" };
 
 async function Content({ params }: { params: Promise<{ id: string; attemptId: string }> }) {
   const user = await requirePageRole("EXAMINER", "ADMIN");

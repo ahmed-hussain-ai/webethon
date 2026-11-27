@@ -13,7 +13,7 @@ import { getLobby } from "@/lib/candidate/service";
 import { ApiError } from "@/lib/api";
 import { MULTI_RULE_LABEL } from "@/lib/validation/exams";
 
-export const metadata = { title: "Exam · SecureExam" };
+export const metadata = { title: "Exam · Examora" };
 
 async function Content({ params }: { params: Promise<{ id: string }> }) {
   const user = await requirePageRole("CANDIDATE");

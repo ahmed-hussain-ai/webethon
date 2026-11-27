@@ -7,7 +7,7 @@ import { ShellSkeleton, btn } from "@/components/staff-shell";
 import { requirePageRole } from "@/lib/auth/page-guards";
 import { listMyExams } from "@/lib/candidate/service";
 
-export const metadata = { title: "My Exams · SecureExam" };
+export const metadata = { title: "My Exams · Examora" };
 
 type Item = Awaited<ReturnType<typeof listMyExams>>["available"][number];
 

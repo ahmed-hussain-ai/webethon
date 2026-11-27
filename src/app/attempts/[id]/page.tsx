@@ -11,7 +11,7 @@ import { getPaper } from "@/lib/attempts/workspace";
 import { getPrefs } from "@/lib/preferences/service";
 import { ApiError } from "@/lib/api";
 
-export const metadata = { title: "Exam · SecureExam" };
+export const metadata = { title: "Exam · Examora" };
 
 async function Content({ params }: { params: Promise<{ id: string }> }) {
   const user = await requirePageRole("CANDIDATE", "EXAMINER", "ADMIN");

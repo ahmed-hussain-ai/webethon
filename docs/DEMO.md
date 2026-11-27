@@ -19,7 +19,7 @@ Live: **https://webethon.cognifysol.com** · every demo account uses `Password@1
 | 14–15 | Wrap-up | — |
 
 ## 0–1 · Pitch
-"SecureExam is a full exam platform for admins, examiners and candidates. Three things set it apart:
+"Examora is a full exam platform for admins, examiners and candidates. Three things set it apart:
 - the **server** decides time and rules, enforced right in the database;
 - candidates **never lose an answer**, even offline;
 - results are **transparent**: verifiable reports and a fair dispute process."

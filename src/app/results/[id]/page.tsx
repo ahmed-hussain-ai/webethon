@@ -10,7 +10,7 @@ import { requirePageRole } from "@/lib/auth/page-guards";
 import { getMyResult } from "@/lib/results/service";
 import { ApiError } from "@/lib/api";
 
-export const metadata = { title: "Result · SecureExam" };
+export const metadata = { title: "Result · Examora" };
 const LETTERS = "ABCDEFGHIJ";
 
 async function Content({ params }: { params: Promise<{ id: string }> }) {

@@ -1,7 +1,7 @@
 import { SiteHeader } from "@/components/site-header";
 import { btn } from "@/components/staff-shell";
 
-export const metadata = { title: "Verify a result · SecureExam" };
+export const metadata = { title: "Verify a result · Examora" };
 
 // Public page: no login needed. A GET form, so it works without JavaScript.
 export default function VerifyPage() {

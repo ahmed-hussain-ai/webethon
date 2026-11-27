@@ -4,7 +4,7 @@ import { AuthPage, FormSkeleton } from "@/components/auth-card";
 import { SignupForm } from "@/components/forms/signup-form";
 import { redirectIfLoggedIn } from "@/lib/auth/page-guards";
 
-export const metadata = { title: "Create account · SecureExam" };
+export const metadata = { title: "Create account · Examora" };
 
 async function Gate() {
   await redirectIfLoggedIn();

@@ -7,7 +7,7 @@ const sourceSerif = Source_Serif_4({ variable: "--font-source-serif", subsets: [
 const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500"] });
 
 export const metadata: Metadata = {
-  title: "SecureExam",
+  title: "Examora",
   description: "Secure examination management system",
 };
 

@@ -1,8 +1,10 @@
-# SecureExam: Secure Examination Management System
+<p align="center"><img src="public/brand/examora-logo.svg" alt="Examora" width="420"></p>
+
+# Examora: Secure Examination Management System
 
 **Web-e-Thon · Technoverse 5.0 · COMSATS University Lahore**
 
-SecureExam is a full-stack platform to **create, conduct, monitor and evaluate** online exams. It has three roles: administrator, examiner (teacher) and candidate (student). It is built around three promises:
+Examora is a full-stack platform to **create, conduct, monitor and evaluate** online exams. It has three roles: administrator, examiner (teacher) and candidate (student). It is built around three promises:
 
 1. **Fair timing.** The server decides time and rules, and the database itself enforces them. A device's clock or a modified browser can't change them.
 2. **No lost answers.** Every change is saved at once and kept on the device while offline. It survives refresh, crash and network drops.

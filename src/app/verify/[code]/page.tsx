@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { verifyCode } from "@/lib/results/reports";
 import { clientIp, hit } from "@/lib/rate-limit";
 
-export const metadata = { title: "Verification · SecureExam" };
+export const metadata = { title: "Verification · Examora" };
 
 async function Result({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;

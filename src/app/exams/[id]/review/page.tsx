@@ -8,7 +8,7 @@ import { requirePageRole } from "@/lib/auth/page-guards";
 import { MULTI_RULE_LABEL } from "@/lib/validation/exams";
 import { loadExamPage } from "../shared";
 
-export const metadata = { title: "Review exam · SecureExam" };
+export const metadata = { title: "Review exam · Examora" };
 
 async function Content({ params }: { params: Promise<{ id: string }> }) {
   const user = await requirePageRole("EXAMINER", "ADMIN");

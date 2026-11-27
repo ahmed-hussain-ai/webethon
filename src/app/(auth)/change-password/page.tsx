@@ -4,7 +4,7 @@ import { ChangePasswordForm } from "@/components/forms/change-password-form";
 import { FormAlert } from "@/components/ui";
 import { requirePageUser } from "@/lib/auth/page-guards";
 
-export const metadata = { title: "Change password · SecureExam" };
+export const metadata = { title: "Change password · Examora" };
 
 async function Gate() {
   const user = await requirePageUser({ allowPendingPasswordChange: true });

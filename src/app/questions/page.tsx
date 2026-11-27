@@ -6,7 +6,7 @@ import { requirePageRole } from "@/lib/auth/page-guards";
 import { listCategories, listQuestions } from "@/lib/questions/service";
 import { DIFFICULTIES, DIFFICULTY_LABEL, QUESTION_TYPES, TYPE_LABEL, questionListQuerySchema } from "@/lib/validation/questions";
 
-export const metadata = { title: "Question Bank · SecureExam" };
+export const metadata = { title: "Question Bank · Examora" };
 
 const selectCls =
   "rounded-xl border border-line bg-surface-2 px-3 py-2 text-sm text-ink focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--ring)]";

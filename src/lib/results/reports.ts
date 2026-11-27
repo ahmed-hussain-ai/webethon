@@ -70,7 +70,7 @@ function wrap(text: string, font: PDFFont, size: number, width: number) {
 async function header(pdf: PDFDocument, page: PDFPage, bold: PDFFont, font: PDFFont, title: string, subtitle: string) {
   const { width, height } = page.getSize();
   page.drawRectangle({ x: 0, y: height - 110, width, height: 110, color: TEAL });
-  page.drawText("SECUREEXAM  ·  EXAMINATION PORTAL", { x: 40, y: height - 40, size: 9, font, color: rgb(0.78, 0.87, 0.86) });
+  page.drawText("EXAMORA  ·  FAIR EXAMS. VERIFIED RESULTS.", { x: 40, y: height - 40, size: 9, font, color: rgb(0.78, 0.87, 0.86) });
   page.drawText(safe(title), { x: 40, y: height - 72, size: 22, font: bold, color: rgb(1, 1, 1) });
   page.drawText(safe(subtitle), { x: 40, y: height - 94, size: 11, font, color: rgb(0.85, 0.93, 0.92) });
 }

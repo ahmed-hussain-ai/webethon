@@ -7,7 +7,7 @@ import { PhaseBadge } from "@/components/exams/phase-badge";
 import { requirePageUser } from "@/lib/auth/page-guards";
 import { adminDashboard, examinerDashboard } from "@/lib/dashboard/service";
 
-export const metadata = { title: "Dashboard · SecureExam" };
+export const metadata = { title: "Dashboard · Examora" };
 
 type ExamRow = Awaited<ReturnType<typeof examinerDashboard>>["exams"]["rows"][number];
 

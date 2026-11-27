@@ -5,7 +5,7 @@ import { UserManager } from "@/components/admin/user-manager";
 import { requirePageRole } from "@/lib/auth/page-guards";
 import { listUsers, userListSchema } from "@/lib/users/service";
 
-export const metadata = { title: "Users · SecureExam" };
+export const metadata = { title: "Users · Examora" };
 const sel = "rounded-xl border border-line bg-surface-2 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--ring)]";
 
 async function Content({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

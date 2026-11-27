@@ -5,7 +5,7 @@ import { QuestionForm } from "@/components/questions/question-form";
 import { requirePageRole } from "@/lib/auth/page-guards";
 import { listCategories } from "@/lib/questions/service";
 
-export const metadata = { title: "New question · SecureExam" };
+export const metadata = { title: "New question · Examora" };
 
 async function Content() {
   const user = await requirePageRole("EXAMINER", "ADMIN");

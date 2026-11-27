@@ -5,7 +5,7 @@ import { ExamSettingsForm } from "@/components/exams/exam-settings-form";
 import { requirePageRole } from "@/lib/auth/page-guards";
 import { loadExamPage } from "./shared";
 
-export const metadata = { title: "Exam settings · SecureExam" };
+export const metadata = { title: "Exam settings · Examora" };
 
 async function Content({ params }: { params: Promise<{ id: string }> }) {
   const user = await requirePageRole("EXAMINER", "ADMIN");

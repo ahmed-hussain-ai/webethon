@@ -4,7 +4,7 @@ import { CategoryManager } from "@/components/questions/category-manager";
 import { requirePageRole } from "@/lib/auth/page-guards";
 import { listCategories } from "@/lib/questions/service";
 
-export const metadata = { title: "Categories · SecureExam" };
+export const metadata = { title: "Categories · Examora" };
 
 async function Content() {
   const user = await requirePageRole("EXAMINER", "ADMIN");

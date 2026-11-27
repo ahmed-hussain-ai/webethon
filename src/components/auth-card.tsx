@@ -1,16 +1,7 @@
 import type { ReactNode } from "react";
 import { ThemeToggle } from "./theme-toggle";
+import { BRAND, BrandBadge } from "./brand";
 
-function Logo({ small = false }: { small?: boolean }) {
-  return (
-    <span aria-hidden className={`grid place-items-center rounded-full border border-white/30 bg-white/10 ${small ? "h-9 w-9" : "h-11 w-11"}`}>
-      <svg viewBox="0 0 24 24" className={small ? "h-4 w-4" : "h-5 w-5"} fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z" />
-        <path d="M9 12l2 2 4-4" />
-      </svg>
-    </span>
-  );
-}
 
 const FEATURES = [
   ["Server-timed & fair", "The server clock decides time, never the device."],
@@ -34,10 +25,10 @@ export function AuthPage({
         <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 h-80 w-80 rounded-full border-[40px] border-white/5" />
         <div aria-hidden className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full border-[48px] border-white/5" />
         <div className="relative flex items-center gap-3">
-          <Logo />
+          <BrandBadge />
           <div className="leading-tight">
-            <p className="font-serif text-xl tracking-wide">SecureExam</p>
-            <p className="eyebrow text-[0.62rem] text-on-header-muted">Examination Portal</p>
+            <p className="font-serif text-xl tracking-wide">{BRAND.name}</p>
+            <p className="eyebrow text-[0.62rem] text-on-header-muted">{BRAND.tagline}</p>
           </div>
         </div>
         <div className="relative max-w-md">
@@ -57,7 +48,7 @@ export function AuthPage({
       {/* Form column */}
       <div className="relative flex min-h-0 flex-col">
         <div className="header-band flex items-center justify-between px-5 py-3 lg:hidden">
-          <div className="flex items-center gap-2.5"><Logo small /><span className="font-serif text-lg">SecureExam</span></div>
+          <div className="flex items-center gap-2.5"><BrandBadge small /><span className="font-serif text-lg">{BRAND.name}</span></div>
           <ThemeToggle />
         </div>
         <div className="absolute top-5 right-8 z-10 hidden lg:block"><ThemeToggle /></div>

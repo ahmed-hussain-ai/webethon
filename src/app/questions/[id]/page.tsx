@@ -11,7 +11,7 @@ import { requirePageRole } from "@/lib/auth/page-guards";
 import { getQuestion, listCategories } from "@/lib/questions/service";
 import { ApiError } from "@/lib/api";
 
-export const metadata = { title: "Question · SecureExam" };
+export const metadata = { title: "Question · Examora" };
 
 async function Content({ params, searchParams }: PageProps<"/questions/[id]">) {
   const user = await requirePageRole("EXAMINER", "ADMIN");

@@ -6,7 +6,7 @@ import { requirePageRole } from "@/lib/auth/page-guards";
 import { examDisputes } from "@/lib/disputes/service";
 import { loadExamPage } from "../shared";
 
-export const metadata = { title: "Disputes · SecureExam" };
+export const metadata = { title: "Disputes · Examora" };
 
 async function Content({ params }: { params: Promise<{ id: string }> }) {
   const user = await requirePageRole("EXAMINER", "ADMIN");

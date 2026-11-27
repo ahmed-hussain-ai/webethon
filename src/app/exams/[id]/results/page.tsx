@@ -10,7 +10,7 @@ import { requirePageRole } from "@/lib/auth/page-guards";
 import { getResults, questionAnalytics } from "@/lib/results/service";
 import { loadExamPage } from "../shared";
 
-export const metadata = { title: "Results · SecureExam" };
+export const metadata = { title: "Results · Examora" };
 
 function Tile({ label, value, sub }: { label: string; value: string | number | null; sub?: string }) {
   return (

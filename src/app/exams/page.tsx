@@ -7,7 +7,7 @@ import { LocalTime } from "@/components/local-time";
 import { requirePageRole } from "@/lib/auth/page-guards";
 import { listExams } from "@/lib/exams/service";
 
-export const metadata = { title: "Exams · SecureExam" };
+export const metadata = { title: "Exams · Examora" };
 
 async function Content() {
   const user = await requirePageRole("EXAMINER", "ADMIN");
