@@ -220,11 +220,11 @@ export function ExamWorkspace({ paper, initialPrefs }: { paper: Paper; initialPr
     <div className={`flex min-h-screen flex-col ${prefs.highContrast ? "hc" : ""}`}>
       <header className="header-band sticky top-0 z-20 shadow-md">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-          <div className="min-w-0 flex-1">
-            <p className="eyebrow text-on-header-muted">{paper.isSandbox ? <span className="rounded bg-[#f0c56a] px-1.5 py-0.5 text-[#3a2a00]">Preview · not recorded</span> : "Exam in progress"}</p>
+          <div className="min-w-0 flex-1 max-sm:basis-full">
+            <p className="eyebrow text-on-header-muted">{paper.isSandbox ? <span className="whitespace-nowrap rounded bg-[#f0c56a] px-1.5 py-0.5 text-[#3a2a00]">Preview · not recorded</span> : "Exam in progress"}</p>
             <h1 className="truncate font-serif text-lg">{paper.exam.title}</h1>
           </div>
-          <p role="status" aria-live="polite" className={`flex items-center gap-2 text-sm font-semibold ${status.cls}`}>
+          <p role="status" aria-live="polite" className={`flex items-center gap-2 text-sm font-semibold max-sm:mr-auto ${status.cls}`}>
             <span aria-hidden className={`h-2.5 w-2.5 rounded-full ${status.dot}`} />
             {status.text}
           </p>
