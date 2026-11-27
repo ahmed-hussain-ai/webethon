@@ -62,7 +62,7 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
         </select>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-sm whitespace-nowrap">
-            <input type="checkbox" name="mine" value="1" defaultChecked={!!query.mine} className="h-4 w-4 accent-[var(--brand)]" />
+            <input type="checkbox" name="mine" value="1" aria-label="Mine only" defaultChecked={!!query.mine} className="h-4 w-4 accent-[var(--brand)]" />
             Mine only
           </label>
           <button type="submit" className={btn.primary}>Filter</button>
@@ -72,7 +72,7 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
       <div className="mb-3 flex items-center justify-between text-sm text-muted">
         <p aria-live="polite">
           {data.total} question{data.total === 1 ? "" : "s"}
-          {filtered && " match these filters"}
+          {filtered && (data.total === 1 ? " matches these filters" : " match these filters")}
         </p>
         {filtered && <Link href="/questions" className="font-semibold text-brand hover:underline">Clear filters</Link>}
       </div>

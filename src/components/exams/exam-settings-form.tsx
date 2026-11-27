@@ -20,6 +20,8 @@ const toLocalInput = (iso: string | null) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 const toIso = (local: string) => (local ? new Date(local).toISOString() : null);
+// Unchanged times keep their exact stored value (the input drops seconds, which would look like an edit).
+const keep = (local: string, iso: string | null) => (iso && local === toLocalInput(iso) ? iso : toIso(local));
 
 function Row({ label, htmlFor, error, hint, children }: { label: string; htmlFor?: string; error?: string; hint?: ReactNode; children: ReactNode }) {
   return (
@@ -76,7 +78,7 @@ export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
   const ended = exam.phase === "COMPLETED";
   const frozen = ongoing || ended; // schedule & marking settings locked once the window opens
 
-  const payload = useMemo(() => ({ ...f, startAt: mounted ? toIso(f.startAt) : null, endAt: mounted ? toIso(f.endAt) : null }), [f, mounted]);
+  const payload = useMemo(() => ({ ...f, startAt: mounted ? keep(f.startAt, exam.startAt) : null, endAt: mounted ? keep(f.endAt, exam.endAt) : null }), [f, mounted, exam.startAt, exam.endAt]);
   const clientErrors = useMemo(() => {
     const r = examDetailsSchema.safeParse(payload);
     const out: Record<string, string> = {};
@@ -149,7 +151,7 @@ export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
               <input id={`${uid}-s`} type="datetime-local" value={f.startAt} disabled={frozen || !mounted} onChange={(e) => set("startAt", e.target.value)} className={`${inputCls} ${border(errors.startAt)}`} />
             </Row>
             <Row label="Closes at" htmlFor={`${uid}-e`} error={errors.endAt} hint={ongoing ? "Can only be moved later." : undefined}>
-              <input id={`${uid}-e`} type="datetime-local" value={f.endAt} disabled={ended || !mounted} min={ongoing ? toLocalInput(exam.endAt) : undefined} onChange={(e) => set("endAt", e.target.value)} className={`${inputCls} ${border(errors.endAt)}`} />
+              <input id={`${uid}-e`} type="datetime-local" value={f.endAt} disabled={ended || !mounted} min={ongoing && mounted ? toLocalInput(exam.endAt) : undefined} onChange={(e) => set("endAt", e.target.value)} className={`${inputCls} ${border(errors.endAt)}`} />
             </Row>
           </div>
           <Row label="Duration per candidate (minutes)" htmlFor={`${uid}-du`} error={errors.durationMinutes}

@@ -154,6 +154,7 @@ export function LiveMonitor({ examId, live }: { examId: string; live: boolean })
               <label htmlFor="ann" className="sr-only">Message to all candidates</label>
               <textarea id="ann" rows={3} maxLength={500} value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="e.g. Question 4 has a typo: read 'HAVING' as 'WHERE'."
                 className="w-full rounded-xl border border-line bg-surface-2 p-3 text-sm focus:border-brand focus:outline-none focus:ring-4 focus:ring-[var(--ring)]" />
+              <p className={`text-right text-xs ${msg.length >= 500 ? "font-semibold text-danger" : "text-muted"}`} aria-live="polite">{msg.length}/500{msg.length >= 500 ? " (limit reached)" : ""}</p>
               <button className={`${btn.primary} w-full`} disabled={!msg.trim() || sending}>{sending ? "Sending…" : "Send to all candidates"}</button>
               {sendState && <FormAlert tone={sendState.tone}>{sendState.text}</FormAlert>}
             </form>

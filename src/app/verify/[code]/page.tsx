@@ -2,12 +2,23 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { LocalTime } from "@/components/local-time";
+import { headers } from "next/headers";
 import { verifyCode } from "@/lib/results/reports";
+import { clientIp, hit } from "@/lib/rate-limit";
 
 export const metadata = { title: "Verification · SecureExam" };
 
 async function Result({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
+  const h = await headers();
+  if (!hit(`verify:${clientIp(new Request("http://x", { headers: h }))}`, 30, 60_000).ok) {
+    return (
+      <div className="space-y-3 text-center" role="alert">
+        <h1 className="font-display text-3xl">Too many checks</h1>
+        <p className="text-sm text-muted">Please wait a minute and try again.</p>
+      </div>
+    );
+  }
   const r = await verifyCode(decodeURIComponent(code));
   if (!r) {
     return (

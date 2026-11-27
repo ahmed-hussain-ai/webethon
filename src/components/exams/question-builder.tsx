@@ -223,8 +223,19 @@ export function QuestionBuilder({ exam, categories }: { exam: ExamDetail; catego
   useEffect(() => {
     if (!dirty) return;
     const h = (e: BeforeUnloadEvent) => e.preventDefault();
+    // In-app links (tabs, nav) don't fire beforeunload: ask before following them.
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a || a.target === "_blank" || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      if (a.origin !== window.location.origin || a.pathname === window.location.pathname) return;
+      if (!window.confirm("You have unsaved changes to the questions. Leave without saving?")) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
     window.addEventListener("beforeunload", h);
-    return () => window.removeEventListener("beforeunload", h);
+    document.addEventListener("click", onClick, true);
+    return () => { window.removeEventListener("beforeunload", h); document.removeEventListener("click", onClick, true); };
   }, [dirty]);
 
   const rowErrors = (i: Item) => {

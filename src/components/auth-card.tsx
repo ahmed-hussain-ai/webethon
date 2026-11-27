@@ -55,13 +55,13 @@ export function AuthPage({
       </aside>
 
       {/* Form column */}
-      <div className="flex min-h-0 flex-col">
+      <div className="relative flex min-h-0 flex-col">
         <div className="header-band flex items-center justify-between px-5 py-3 lg:hidden">
           <div className="flex items-center gap-2.5"><Logo small /><span className="font-serif text-lg">SecureExam</span></div>
           <ThemeToggle />
         </div>
-        <div className="hidden justify-end px-8 pt-6 lg:flex"><ThemeToggle /></div>
-        <main className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-4 pt-6 pb-3 sm:px-5 sm:pt-10 lg:pt-[6vh] [scrollbar-width:thin]">
+        <div className="absolute top-5 right-8 z-10 hidden lg:block"><ThemeToggle /></div>
+        <main className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-4 pt-6 pb-3 sm:px-5 sm:pt-10 lg:pt-[max(3rem,9vh)] [scrollbar-width:thin]">
           <section aria-labelledby="auth-title" className="w-full max-w-md">
             <div className="mb-3 flex items-start justify-between gap-3 sm:mb-5">
               <div>

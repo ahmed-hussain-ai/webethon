@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageUuid } from "@/lib/params";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CandidateShell } from "@/components/candidate/candidate-shell";
@@ -14,7 +15,7 @@ const LETTERS = "ABCDEFGHIJ";
 
 async function Content({ params }: { params: Promise<{ id: string }> }) {
   const user = await requirePageRole("CANDIDATE");
-  const r = await getMyResult(user, (await params).id).catch((e) => {
+  const r = await getMyResult(user, pageUuid((await params).id)).catch((e) => {
     if (e instanceof ApiError && e.status === 404) notFound();
     throw e;
   });

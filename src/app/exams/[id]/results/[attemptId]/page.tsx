@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageUuid } from "@/lib/params";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ShellSkeleton, StaffShell } from "@/components/staff-shell";
@@ -17,7 +18,7 @@ async function Content({ params }: { params: Promise<{ id: string; attemptId: st
   const user = await requirePageRole("EXAMINER", "ADMIN");
   const p = await params;
   const exam = await loadExamPage(user, p.id);
-  const g = await getAttemptForGrading(user, exam.id, p.attemptId).catch((e) => {
+  const g = await getAttemptForGrading(user, exam.id, pageUuid(p.attemptId)).catch((e) => {
     if (e instanceof ApiError && e.status === 404) notFound();
     throw e;
   });

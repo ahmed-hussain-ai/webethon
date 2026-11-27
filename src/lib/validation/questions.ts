@@ -55,7 +55,7 @@ function checkOptions(type: "SINGLE_CHOICE" | "MULTI_SELECT") {
     const seen = new Map<string, number>();
     opts.forEach((o, i) => {
       const k = norm(o.text);
-      if (k && seen.has(k)) ctx.addIssue({ code: "custom", path: [i, "text"], message: `Same text as option ${seen.get(k)! + 1}` });
+      if (k && seen.has(k)) ctx.addIssue({ code: "custom", path: [i, "text"], message: `Same text as option ${String.fromCharCode(65 + seen.get(k)!)}` });
       else seen.set(k, i);
     });
     const correct = opts.filter((o) => o.isCorrect).length;

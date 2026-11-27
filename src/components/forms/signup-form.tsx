@@ -23,7 +23,8 @@ export function SignupForm() {
       password: form.get("password"),
     });
     const errs = parsed.success ? {} : zodFieldErrors(parsed.error.issues);
-    if (!errs.confirm && form.get("confirm") !== form.get("password")) errs.confirm = "Passwords do not match";
+    if (!form.get("confirm")) errs.confirm = "Confirm your password";
+    else if (form.get("confirm") !== form.get("password")) errs.confirm = "Passwords do not match";
     setAlert(null);
     setFields(errs);
     if (!parsed.success || Object.keys(errs).length) return;

@@ -22,7 +22,8 @@ export function ChangePasswordForm() {
       newPassword: form.get("newPassword"),
     });
     const errs = parsed.success ? {} : zodFieldErrors(parsed.error.issues);
-    if (!errs.confirm && form.get("confirm") !== form.get("newPassword")) errs.confirm = "Passwords do not match";
+    if (!form.get("confirm")) errs.confirm = "Confirm your new password";
+    else if (form.get("confirm") !== form.get("newPassword")) errs.confirm = "Passwords do not match";
     setAlert(null);
     setFields(errs);
     if (!parsed.success || Object.keys(errs).length) return;

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageUuid } from "@/lib/params";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CandidateShell } from "@/components/candidate/candidate-shell";
@@ -14,7 +15,7 @@ export const metadata = { title: "Exam · SecureExam" };
 
 async function Content({ params }: { params: Promise<{ id: string }> }) {
   const user = await requirePageRole("CANDIDATE", "EXAMINER", "ADMIN");
-  const paper = await getPaper(user, (await params).id).catch((err) => {
+  const paper = await getPaper(user, pageUuid((await params).id)).catch((err) => {
     if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
   });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageUuid } from "@/lib/params";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageTitle, ShellSkeleton, StaffShell } from "@/components/staff-shell";
@@ -14,7 +15,7 @@ export const metadata = { title: "Question · SecureExam" };
 
 async function Content({ params, searchParams }: PageProps<"/questions/[id]">) {
   const user = await requirePageRole("EXAMINER", "ADMIN");
-  const { id } = await params;
+  const id = pageUuid((await params).id);
   const sp = await searchParams;
   const q = await getQuestion(user, id).catch((e) => {
     if (e instanceof ApiError && e.status === 404) notFound();
