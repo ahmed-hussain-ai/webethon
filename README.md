@@ -141,6 +141,7 @@
   - autosave with an offline banner;
   - resume after refresh, and auto-submit at the deadline.
 - **Display:** text size, split view with **scratchpad**, navigator position, theme and high contrast, saved to the account.
+- **Keyboard shortcuts:** `Alt+←/→` to move between questions, `Alt+R` to mark for review.
 - **Results:**
   - per-question marks and feedback;
   - a **PDF report with verification code + QR**;
