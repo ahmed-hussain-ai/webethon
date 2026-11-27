@@ -277,7 +277,7 @@ export function ExamWorkspace({ paper, initialPrefs }: { paper: Paper; initialPr
           </button>
         </nav>
 
-        <main className={prefs.layout === "SPLIT" ? "grid gap-6 xl:grid-cols-[1fr_380px]" : ""}>
+        <main id="main" className={prefs.layout === "SPLIT" ? "grid gap-6 xl:grid-cols-[1fr_380px]" : ""}>
           <article aria-labelledby="q-title" className="h-fit rounded-3xl border border-line bg-surface" style={{ fontSize: FONT[prefs.fontSize] }}>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4">
               <p id="q-title" className="eyebrow text-muted">Question {current + 1} of {paper.questions.length}</p>
@@ -321,11 +321,12 @@ export function ExamWorkspace({ paper, initialPrefs }: { paper: Paper; initialPr
                       );
                     })}
                   </div>
-                  {a.selectedOptionIds.length > 0 && (
-                    <button type="button" onClick={() => change(q.id, { selectedOptionIds: [] })} className="mt-3 text-sm font-semibold text-muted underline-offset-4 hover:text-ink hover:underline">
-                      Clear answer
-                    </button>
-                  )}
+                  {/* Always rendered (hidden when empty) so the layout doesn't jump when an option is picked. */}
+                  <button type="button" onClick={() => change(q.id, { selectedOptionIds: [] })} disabled={a.selectedOptionIds.length === 0}
+                    aria-hidden={a.selectedOptionIds.length === 0} tabIndex={a.selectedOptionIds.length === 0 ? -1 : undefined}
+                    className={`mt-3 text-sm font-semibold text-muted underline-offset-4 hover:text-ink hover:underline ${a.selectedOptionIds.length === 0 ? "invisible" : ""}`}>
+                    Clear answer
+                  </button>
                 </fieldset>
               )}
             </div>

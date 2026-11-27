@@ -52,7 +52,7 @@ export default function VerifyCodePage(props: PageProps<"/verify/[code]">) {
   return (
     <>
       <SiteHeader />
-      <main className="flex flex-1 items-start justify-center px-4 py-12">
+      <main id="main" className="flex flex-1 items-start justify-center px-4 py-12">
         <section className="w-full max-w-lg space-y-5 rounded-3xl border border-line bg-surface p-6">
           <p className="eyebrow text-muted">Result verification</p>
           <Suspense fallback={<p className="text-sm text-muted">Checking…</p>}><Result params={props.params} /></Suspense>

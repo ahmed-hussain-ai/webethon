@@ -39,7 +39,7 @@ export function StaffShell({ user, active, children }: { user: Pick<CurrentUser,
           ))}
         </ul>
       </nav>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
     </>
   );
 }
@@ -61,7 +61,7 @@ export function ShellSkeleton() {
     <>
       <SiteHeader />
       <div className="header-band h-[60px] border-t border-white/10" />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8" aria-busy="true">
+      <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8" aria-busy="true">
         <div className="mb-6 h-12 w-64 animate-pulse rounded-xl bg-surface" />
         <div className="h-72 animate-pulse rounded-3xl bg-surface" />
       </main>

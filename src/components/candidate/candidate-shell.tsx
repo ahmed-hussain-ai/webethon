@@ -17,7 +17,7 @@ export function CandidateShell({ name, children }: { name: string; children: Rea
           <li><Link href="/my-exams" aria-current="page" className="chip-active block rounded-xl px-4 py-2 text-sm font-semibold">My Exams</Link></li>
         </ul>
       </nav>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
     </>
   );
 }

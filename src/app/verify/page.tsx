@@ -8,7 +8,7 @@ export default function VerifyPage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex flex-1 items-start justify-center px-4 py-12">
+      <main id="main" className="flex flex-1 items-start justify-center px-4 py-12">
         <form action="/verify/lookup" method="get" className="w-full max-w-md space-y-4 rounded-3xl border border-line bg-surface p-6">
           <p className="eyebrow text-muted">Public verification</p>
           <h1 className="font-display text-3xl">Verify a result report</h1>
