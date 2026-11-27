@@ -310,7 +310,9 @@ export function QuestionBuilder({ exam, categories }: { exam: ExamDetail; catego
           <div>
             <h2 id="paper-title" className="font-display text-2xl">Exam paper</h2>
             <p className={`mt-1 font-mono text-sm ${total === exam.totalMarks ? "text-success" : "text-muted"}`}>
-              {total} of {exam.totalMarks} marks assigned{total === exam.totalMarks ? " ✓" : total > exam.totalMarks ? ` (${r2(total - exam.totalMarks)} over)` : ` (${r2(exam.totalMarks - total)} left)`}
+              {editable
+                ? <>{total} marks{total === exam.totalMarks ? " ✓ matches the exam total" : total > 0 ? ` · exam total will change from ${exam.totalMarks} to ${total} when you save` : ""}</>
+                : <>{total} of {exam.totalMarks} marks assigned{total === exam.totalMarks ? " ✓" : ""}</>}
             </p>
           </div>
           {editable && (

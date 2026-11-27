@@ -156,7 +156,14 @@ export async function setExamQuestions(actor: CurrentUser, id: string, input: z.
   }
 
   await db.$transaction(async (tx) => {
-    const res = await tx.exam.updateMany({ where: { id, updatedAt: new Date(input.updatedAt) }, data: { updatedAt: new Date() } });
+    // The exam total follows the questions, so it never has to be fixed by hand.
+    // The pass mark keeps its percentage (e.g. 5/10 → 6/12).
+    const sum = Math.round(input.items.reduce((t, i) => t + Number(i.marks), 0) * 100) / 100;
+    const oldTotal = Number(exam.totalMarks), oldPass = Number(exam.passMarks);
+    const totals = sum > 0 && sum !== oldTotal
+      ? { totalMarks: sum, passMarks: Math.min(sum, Math.round((oldPass / oldTotal) * sum * 100) / 100) }
+      : {};
+    const res = await tx.exam.updateMany({ where: { id, updatedAt: new Date(input.updatedAt) }, data: { updatedAt: new Date(), ...totals } });
     if (res.count === 0) throw CONFLICT();
     await tx.examQuestion.deleteMany({ where: { examId: id } });
     if (input.items.length) {
