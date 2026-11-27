@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { ApiError } from "@/lib/api";
 import type { CurrentUser } from "@/lib/auth/current-user";
+import { gradeAttempt } from "@/lib/attempts/grading";
 
 /** Refuse to start with less than this left: a candidate shouldn't burn their only attempt on seconds. */
 export const MIN_START_SECONDS = 60;
@@ -33,12 +34,15 @@ export function deadlineFor(startAt: Date, durationMinutes: number, endAt: Date)
  * past its deadline closes it with submitted_at = deadline. Atomic, so concurrent calls are safe.
  */
 export async function finaliseExpired(where: { userId?: string; examId?: string; attemptId?: string }) {
-  await db.$executeRaw`
+  const closed = await db.$queryRaw<{ id: string }[]>`
     UPDATE attempts SET status = 'AUTO_SUBMITTED', submitted_at = deadline_at
      WHERE status = 'IN_PROGRESS' AND deadline_at <= now()
        AND (${where.userId ?? null}::uuid IS NULL OR user_id = ${where.userId ?? null}::uuid)
        AND (${where.examId ?? null}::uuid IS NULL OR exam_id = ${where.examId ?? null}::uuid)
-       AND (${where.attemptId ?? null}::uuid IS NULL OR id = ${where.attemptId ?? null}::uuid)`;
+       AND (${where.attemptId ?? null}::uuid IS NULL OR id = ${where.attemptId ?? null}::uuid)
+ RETURNING id`;
+  // Mark the objective questions of every attempt that just closed.
+  for (const { id } of closed) await gradeAttempt(id);
 }
 
 type ExamRow = { id: string; status: "DRAFT" | "PUBLISHED"; startAt: Date | null; endAt: Date | null; durationMinutes: number };

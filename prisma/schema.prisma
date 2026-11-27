@@ -277,22 +277,26 @@ model Enrollment {
 // min(start + duration, exam closing time). One real attempt per candidate per exam
 // (partial unique index in SQL; sandbox previews are excluded).
 model Attempt {
-  id            String        @id @default(uuid()) @db.Uuid
-  examId        String        @map("exam_id") @db.Uuid
-  userId        String        @map("user_id") @db.Uuid
-  isSandbox     Boolean       @default(false) @map("is_sandbox") // examiner preview (4.3), never counted
-  status        AttemptStatus @default(IN_PROGRESS)
-  startedAt     DateTime      @default(now()) @map("started_at") @db.Timestamptz(3)
-  deadlineAt    DateTime      @map("deadline_at") @db.Timestamptz(3)
-  submittedAt   DateTime?     @map("submitted_at") @db.Timestamptz(3)
-  lastSeenAt    DateTime?     @map("last_seen_at") @db.Timestamptz(3)
-  questionCount Int           @map("question_count")
-  totalMarks    Decimal       @map("total_marks") @db.Decimal(7, 2)
-  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  id             String        @id @default(uuid()) @db.Uuid
+  examId         String        @map("exam_id") @db.Uuid
+  userId         String        @map("user_id") @db.Uuid
+  isSandbox      Boolean       @default(false) @map("is_sandbox") // examiner preview (4.3), never counted
+  status         AttemptStatus @default(IN_PROGRESS)
+  startedAt      DateTime      @default(now()) @map("started_at") @db.Timestamptz(3)
+  deadlineAt     DateTime      @map("deadline_at") @db.Timestamptz(3)
+  submittedAt    DateTime?     @map("submitted_at") @db.Timestamptz(3)
+  lastSeenAt     DateTime?     @map("last_seen_at") @db.Timestamptz(3)
+  questionCount  Int           @map("question_count")
+  totalMarks     Decimal       @map("total_marks") @db.Decimal(7, 2)
+  // Filled automatically when the attempt finishes (MCQs only; written answers are reviewed).
+  objectiveScore Decimal?      @map("objective_score") @db.Decimal(7, 2)
+  autoGradedAt   DateTime?     @map("auto_graded_at") @db.Timestamptz(3)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 
   exam      Exam              @relation(fields: [examId], references: [id], onDelete: Restrict)
   user      User              @relation(fields: [userId], references: [id], onDelete: Restrict)
   questions AttemptQuestion[]
+  answers   Answer[]
 
   @@index([examId, status])
   @@index([userId])
@@ -313,8 +317,29 @@ model AttemptQuestion {
 
   attempt  Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   question Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  answer   Answer?
 
   @@unique([attemptId, orderIndex])
   @@unique([attemptId, questionId])
   @@map("attempt_questions")
+}
+
+// The candidate's answer to one question of their attempt. One row per attempt question.
+// client_seq orders autosaves: an older save arriving late can never overwrite a newer one.
+model Answer {
+  id                String   @id @default(uuid()) @db.Uuid
+  attemptId         String   @map("attempt_id") @db.Uuid
+  attemptQuestionId String   @unique @map("attempt_question_id") @db.Uuid
+  selectedOptionIds Json     @default("[]") @map("selected_option_ids")
+  textAnswer        String?  @map("text_answer")
+  markedForReview   Boolean  @default(false) @map("marked_for_review")
+  clientSeq         Int      @default(0) @map("client_seq")
+  savedAt           DateTime @default(now()) @map("saved_at") @db.Timestamptz(3)
+  autoMarks         Decimal? @map("auto_marks") @db.Decimal(6, 2) // objective questions, set when the attempt finishes
+
+  attempt         Attempt         @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  attemptQuestion AttemptQuestion @relation(fields: [attemptQuestionId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@map("answers")
 }
