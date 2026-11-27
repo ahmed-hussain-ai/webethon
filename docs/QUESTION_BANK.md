@@ -16,8 +16,9 @@ One **shared** bank for the whole platform. Examiners build exams by picking que
 |---|---|---|
 | Single choice | 2–10 | exactly 1 |
 | Multiple select | 2–10 | ≥ 1 correct **and** ≥ 1 incorrect |
-| Written | none | n/a (optional model answer for markers) |
+| Written | none | **correct (model) answer required**: the reference written answers are graded against |
 
+- **Every question carries its correct answer** (enforced by the form, API, import and a DB CHECK). MCQ answers drive automatic marking; written answers are the reference for marking (manual now, AI-assisted later). Correct answers are never sent to candidates.
 - No duplicate option text (`"Stack"` = `" stack "`). Marks 0.01–1000, max 2 decimals. Question ≤ 5000 chars, option ≤ 1000.
 - Text is shown as plain text, never HTML (no script injection).
 - **Saving** replaces the question and its options in one transaction; the database re-checks the option rules at commit.

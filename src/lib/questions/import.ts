@@ -55,7 +55,9 @@ function toCanonical(rec: Record<string, unknown>): { value?: Record<string, unk
       else options[i].isCorrect = true;
     }
   }
-  if (type === "WRITTEN" && (options.length || correctRaw)) problems.push("Written questions cannot have options or a correct answer");
+  if (type === "WRITTEN" && (options.length || correctRaw)) {
+    problems.push("Written questions cannot have options or a correct letter. Put the correct answer in model_answer");
+  }
 
   return {
     categoryName,
@@ -125,7 +127,9 @@ export async function analyseImport(format: "csv" | "json", content: string) {
         if (issue.path[0] === "type" && c.problems.some((p) => p.startsWith("Unknown type"))) continue;
         // Already reported as "Option X is empty but a later option is filled".
         if (issue.path[0] === "options" && issue.path[2] === "text" && c.problems.some((p) => p.includes("is empty but"))) continue;
-        const where = issue.path[0] === "options" && typeof issue.path[1] === "number" ? `Option ${LETTERS[issue.path[1]]}: ` : "";
+        const where =
+          issue.path[0] === "options" && typeof issue.path[1] === "number" ? `Option ${LETTERS[issue.path[1]]}: `
+          : issue.path[0] === "modelAnswer" ? "model_answer column: " : "";
         problems.push(where + issue.message);
       }
     }

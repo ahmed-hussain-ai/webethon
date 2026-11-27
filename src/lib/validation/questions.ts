@@ -3,7 +3,7 @@ import { z } from "zod";
 // Shared by the API and the browser form, and mirrors the DB triggers exactly:
 //   SINGLE_CHOICE : 2–10 options, exactly 1 correct
 //   MULTI_SELECT  : 2–10 options, ≥1 correct and ≥1 incorrect
-//   WRITTEN       : no options
+//   WRITTEN       : no options, correct (model) answer REQUIRED. It is the grading reference.
 //   all           : no duplicate option text (case/space-insensitive)
 
 export const QUESTION_TYPES = ["SINGLE_CHOICE", "MULTI_SELECT", "WRITTEN"] as const;
@@ -78,7 +78,11 @@ export const questionInputSchema = z.discriminatedUnion(
       ...base,
       type: z.literal("WRITTEN"),
       options: z.array(optionSchema).max(0, "Written questions cannot have options").optional().default([]),
-      modelAnswer: optionalLongText("Model answer"),
+      modelAnswer: z
+        .string({ error: "Enter the correct answer" })
+        .trim()
+        .min(1, "Enter the correct answer. It is used to grade candidates' answers")
+        .max(5000, "Correct answer is too long (max 5000 characters)"),
     }),
   ],
   { error: "Choose a question type" },

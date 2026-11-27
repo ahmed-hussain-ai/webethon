@@ -234,11 +234,13 @@ export function QuestionForm({
 
         {isChoice ? (
           <fieldset>
-            <legend className="mb-1 block text-sm font-semibold">Answer options</legend>
+            <legend className="mb-1 block text-sm font-semibold">
+              Answer options &amp; correct answer <span className="text-danger" aria-hidden>*</span>
+            </legend>
             <p className="mb-3 text-xs text-muted">
               {type === "SINGLE_CHOICE"
-                ? "Select the one correct answer."
-                : "Tick every correct answer. At least one option must be incorrect."}{" "}
+                ? "Select the one correct answer. It is used for automatic marking."
+                : "Tick every correct answer. At least one option must be incorrect. Used for automatic marking."}{" "}
               {MIN_OPTIONS}–{MAX_OPTIONS} options.
             </p>
             {optionsError && <div className="mb-3"><FormAlert>{optionsError}</FormAlert></div>}
@@ -287,10 +289,17 @@ export function QuestionForm({
         ) : (
           <div>
             <label htmlFor={`${uid}-model`} className="mb-1.5 block text-sm font-semibold">
-              Model answer <span className="font-normal text-muted">(optional, shown only to markers)</span>
+              Correct answer <span className="text-danger" aria-hidden>*</span>
             </label>
+            <p id={`${uid}-model-hint`} className="mb-2 text-xs text-muted">
+              The reference answer written answers are graded against. Include the key points a full-mark answer must cover.
+              Never shown to candidates during the exam.
+            </p>
             <textarea
-              id={`${uid}-model`} rows={4} value={modelAnswer} onChange={(e) => setModelAnswer(e.target.value)} maxLength={5000}
+              id={`${uid}-model`} rows={5} value={modelAnswer} onChange={(e) => setModelAnswer(e.target.value)} maxLength={5000}
+              required aria-required="true" aria-invalid={!!errors.modelAnswer}
+              aria-describedby={`${uid}-model-hint${errors.modelAnswer ? ` ${uid}-model-err` : ""}`}
+              placeholder="e.g. INNER JOIN returns only rows with a match in both tables; LEFT JOIN returns every row of the left table…"
               className={`${inputCls} ${errCls(errors.modelAnswer)} resize-y`}
             />
             <Err id={`${uid}-model-err`} msg={errors.modelAnswer} />
