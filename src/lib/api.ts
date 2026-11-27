@@ -60,7 +60,7 @@ export function assertSameOrigin(req: Request) {
 const DB_RULES: Record<string, number> = {
   INVALID_OPTIONS: 400, INVALID_MARKS: 400, NOT_A_CANDIDATE: 400,
   QUESTION_LOCKED: 409, QUESTION_INACTIVE: 409, EXAM_LOCKED: 409, PUBLISH_BLOCKED: 409,
-  RESULTS_TOO_EARLY: 409, LAST_ADMIN: 409, ROLE_IN_USE: 409, FORBIDDEN: 403,
+  RESULTS_TOO_EARLY: 409, LAST_ADMIN: 409, ROLE_IN_USE: 409, EXAM_ENDED: 409, FORBIDDEN: 403,
 };
 const FRIENDLY: Record<string, string> = {
   QUESTION_LOCKED: "This question is used in a published exam, so it can't be changed. Duplicate it to make an edited copy.",

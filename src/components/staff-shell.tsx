@@ -4,10 +4,11 @@ import { SiteHeader } from "./site-header";
 import { LogoutButton } from "./logout-button";
 import type { CurrentUser } from "@/lib/auth/current-user";
 
-export type StaffNav = "dashboard" | "questions" | "categories" | "import";
+export type StaffNav = "dashboard" | "exams" | "questions" | "categories" | "import";
 
 const NAV: { key: StaffNav; href: string; label: string }[] = [
   { key: "dashboard", href: "/dashboard", label: "Dashboard" },
+  { key: "exams", href: "/exams", label: "Exams" },
   { key: "questions", href: "/questions", label: "Question Bank" },
   { key: "categories", href: "/categories", label: "Categories" },
   { key: "import", href: "/questions/import", label: "Import" },

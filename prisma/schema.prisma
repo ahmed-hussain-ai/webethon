@@ -207,6 +207,8 @@ model Exam {
   shuffleQuestions   Boolean         @default(false) @map("shuffle_questions")
   shuffleOptions     Boolean         @default(false) @map("shuffle_options")
   multiSelectRule    MultiSelectRule @default(ALL_OR_NOTHING) @map("multi_select_rule")
+  // Written answers get an AI-suggested mark (examiner still reviews). MCQs are ALWAYS auto-marked.
+  autoCheckWritten   Boolean         @default(true) @map("auto_check_written")
   // Integrity settings, e.g. { "requireFullscreen": true, "maxTabSwitchWarnings": 3 }
   settings           Json            @default("{}")
   publishedAt        DateTime?       @map("published_at") @db.Timestamptz(3)

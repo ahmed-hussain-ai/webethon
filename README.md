@@ -30,3 +30,4 @@ All accounts use password `Password@123`.
 - [docs/DATA_MODEL.md](docs/DATA_MODEL.md): tables, business rules, edge cases
 - [docs/AUTH.md](docs/AUTH.md): signup/login rules, sessions, temporary passwords, auth API
 - [docs/QUESTION_BANK.md](docs/QUESTION_BANK.md): question bank rules, permissions, CSV/JSON import
+- [docs/EXAMS.md](docs/EXAMS.md): exam builder, lifecycle, publish checklist, enrollment
