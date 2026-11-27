@@ -62,6 +62,7 @@ async function main() {
   await db.$executeRawUnsafe(`ALTER TABLE question_options DISABLE TRIGGER question_options_freeze`);
   await db.$executeRawUnsafe(`ALTER TABLE exam_questions DISABLE TRIGGER exam_questions_guard`);
   try {
+    await db.attempt.deleteMany(); // cascades the frozen papers
     await db.enrollment.deleteMany();
     await db.examQuestion.deleteMany();
     await db.exam.deleteMany();

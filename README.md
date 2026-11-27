@@ -31,3 +31,4 @@ All accounts use password `Password@123`.
 - [docs/AUTH.md](docs/AUTH.md): signup/login rules, sessions, temporary passwords, auth API
 - [docs/QUESTION_BANK.md](docs/QUESTION_BANK.md): question bank rules, permissions, CSV/JSON import
 - [docs/EXAMS.md](docs/EXAMS.md): exam builder, lifecycle, publish checklist, enrollment
+- [docs/CANDIDATE.md](docs/CANDIDATE.md): candidate exam list, lobby, starting an attempt

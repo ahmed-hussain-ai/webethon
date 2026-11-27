@@ -71,6 +71,12 @@ enum ResultsStatus {
   PUBLISHED
 }
 
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED // by the candidate
+  AUTO_SUBMITTED // deadline reached
+}
+
 enum EnrollmentStatus {
   ACTIVE
   REVOKED
@@ -97,6 +103,7 @@ model User {
 
   preferences        WorkspacePreferences?
   sessions           Session[]
+  attempts           Attempt[]
   categoriesCreated  Category[]
   questionsCreated   Question[]
   examsCreated       Exam[]
@@ -166,10 +173,11 @@ model Question {
   createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  category      Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  createdBy     User             @relation(fields: [createdById], references: [id], onDelete: Restrict)
-  options       QuestionOption[]
-  examQuestions ExamQuestion[]
+  category         Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy        User              @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  options          QuestionOption[]
+  examQuestions    ExamQuestion[]
+  attemptQuestions AttemptQuestion[]
 
   @@index([categoryId])
   @@index([createdById])
@@ -222,6 +230,7 @@ model Exam {
   createdBy   User           @relation(fields: [createdById], references: [id], onDelete: Restrict)
   questions   ExamQuestion[]
   enrollments Enrollment[]
+  attempts    Attempt[]
 
   @@index([createdById])
   @@index([status, startAt])
@@ -260,4 +269,52 @@ model Enrollment {
   @@unique([examId, candidateId])
   @@index([candidateId])
   @@map("enrollments")
+}
+
+// ───────────────────────── Attempts ─────────────────────────
+
+// One sitting of an exam. Deadline is fixed by the SERVER at start:
+// min(start + duration, exam closing time). One real attempt per candidate per exam
+// (partial unique index in SQL; sandbox previews are excluded).
+model Attempt {
+  id            String        @id @default(uuid()) @db.Uuid
+  examId        String        @map("exam_id") @db.Uuid
+  userId        String        @map("user_id") @db.Uuid
+  isSandbox     Boolean       @default(false) @map("is_sandbox") // examiner preview (4.3), never counted
+  status        AttemptStatus @default(IN_PROGRESS)
+  startedAt     DateTime      @default(now()) @map("started_at") @db.Timestamptz(3)
+  deadlineAt    DateTime      @map("deadline_at") @db.Timestamptz(3)
+  submittedAt   DateTime?     @map("submitted_at") @db.Timestamptz(3)
+  lastSeenAt    DateTime?     @map("last_seen_at") @db.Timestamptz(3)
+  questionCount Int           @map("question_count")
+  totalMarks    Decimal       @map("total_marks") @db.Decimal(7, 2)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  exam      Exam              @relation(fields: [examId], references: [id], onDelete: Restrict)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  questions AttemptQuestion[]
+
+  @@index([examId, status])
+  @@index([userId])
+  @@map("attempts")
+}
+
+// The candidate's FROZEN paper: order, option order, marks and a snapshot of the question
+// (incl. correct answers, server-side only). Later edits to the bank/exam can't change it.
+model AttemptQuestion {
+  id            String  @id @default(uuid()) @db.Uuid
+  attemptId     String  @map("attempt_id") @db.Uuid
+  questionId    String  @map("question_id") @db.Uuid
+  orderIndex    Int     @map("order_index")
+  optionOrder   Json    @default("[]") @map("option_order") // option ids in the order shown
+  marks         Decimal @db.Decimal(6, 2)
+  negativeMarks Decimal @default(0) @map("negative_marks") @db.Decimal(6, 2)
+  snapshot      Json
+
+  attempt  Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([attemptId, orderIndex])
+  @@unique([attemptId, questionId])
+  @@map("attempt_questions")
 }

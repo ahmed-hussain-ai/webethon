@@ -1,6 +1,6 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
-import { LogoutButton } from "@/components/logout-button";
 import { requirePageUser } from "@/lib/auth/page-guards";
 import { StaffShell } from "@/components/staff-shell";
 
@@ -11,6 +11,7 @@ const ROLE_LABEL = { ADMIN: "Administrator", EXAMINER: "Examiner", CANDIDATE: "C
 async function RoleCard() {
   // Role comes from the database row of the logged-in user, never from the browser.
   const user = await requirePageUser();
+  if (user.role === "CANDIDATE") redirect("/my-exams"); // candidates' home is their exam list
   const card = (
     <section aria-labelledby="role-title" className="overflow-hidden rounded-3xl border border-line bg-surface">
       <div className="header-band flex items-center justify-between gap-4 px-6 py-6 sm:px-8">
@@ -34,23 +35,10 @@ async function RoleCard() {
       </dl>
     </section>
   );
-  if (user.role !== "CANDIDATE") {
-    return (
-      <StaffShell user={user} active="dashboard">
-        {card}
-      </StaffShell>
-    );
-  }
   return (
-    <>
-      <SiteHeader>
-        <p className="hidden font-mono text-sm sm:block">
-          <span className="text-on-header-muted">Welcome :</span> {user.name}
-        </p>
-        <LogoutButton />
-      </SiteHeader>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">{card}</main>
-    </>
+    <StaffShell user={user} active="dashboard">
+      {card}
+    </StaffShell>
   );
 }
 
