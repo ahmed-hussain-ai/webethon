@@ -1,0 +1,24 @@
+[
+  {
+    "type": "single",
+    "category": "Programming",
+    "difficulty": "easy",
+    "marks": 2,
+    "text": "Which keyword declares a constant in JavaScript?",
+    "options": [
+      { "text": "var", "isCorrect": false },
+      { "text": "let", "isCorrect": false },
+      { "text": "const", "isCorrect": true },
+      { "text": "static", "isCorrect": false }
+    ],
+    "explanation": "const creates a binding that cannot be reassigned."
+  },
+  {
+    "type": "written",
+    "category": "Databases",
+    "difficulty": "hard",
+    "marks": 10,
+    "text": "Explain the difference between an INNER JOIN and a LEFT JOIN.",
+    "modelAnswer": "INNER JOIN returns only matching rows; LEFT JOIN returns all rows from the left table plus matches."
+  }
+]

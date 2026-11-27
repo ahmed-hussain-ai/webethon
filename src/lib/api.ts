@@ -56,6 +56,25 @@ export function assertSameOrigin(req: Request) {
   throw new ApiError(403, "BAD_ORIGIN", "Cross-site request blocked");
 }
 
+// Business-rule errors raised by our DB triggers start with a stable code.
+const DB_RULES: Record<string, number> = {
+  INVALID_OPTIONS: 400, INVALID_MARKS: 400, NOT_A_CANDIDATE: 400,
+  QUESTION_LOCKED: 409, QUESTION_INACTIVE: 409, EXAM_LOCKED: 409, PUBLISH_BLOCKED: 409,
+  RESULTS_TOO_EARLY: 409, LAST_ADMIN: 409, ROLE_IN_USE: 409, FORBIDDEN: 403,
+};
+const FRIENDLY: Record<string, string> = {
+  QUESTION_LOCKED: "This question is used in a published exam, so it can't be changed. Duplicate it to make an edited copy.",
+};
+
+/** Turn a DB trigger exception into an ApiError (or null if it isn't one of ours). */
+export function dbRuleError(e: unknown): ApiError | null {
+  const text = e instanceof Error ? `${e.message} ${JSON.stringify((e as { meta?: unknown }).meta ?? "")}` : "";
+  const m = text.match(/\b([A-Z_]{5,}): ([^"`\n]+)/);
+  if (!m || !(m[1] in DB_RULES)) return null;
+  const msg = m[2].trim();
+  return new ApiError(DB_RULES[m[1]], m[1], FRIENDLY[m[1]] ?? msg.charAt(0).toUpperCase() + msg.slice(1));
+}
+
 /** Wrap a route handler: converts ApiError / validation / DB errors into clean JSON. */
 export function handler<Ctx = unknown>(fn: (req: Request, ctx: Ctx) => Promise<Response>) {
   return async (req: Request, ctx: Ctx): Promise<Response> => {
@@ -69,6 +88,10 @@ export function handler<Ctx = unknown>(fn: (req: Request, ctx: Ctx) => Promise<R
           { error: { code: e.code, message: e.message, ...(e.fields ? { fields: e.fields } : {}) } },
           { status: e.status, headers: { ...NO_STORE, ...e.headers } },
         );
+      }
+      const rule = dbRuleError(e);
+      if (rule) {
+        return NextResponse.json({ error: { code: rule.code, message: rule.message } }, { status: rule.status, headers: NO_STORE });
       }
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
         return NextResponse.json({ error: { code: "CONFLICT", message: "This record already exists" } }, { status: 409, headers: NO_STORE });

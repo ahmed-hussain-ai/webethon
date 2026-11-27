@@ -1,0 +1,4 @@
+type,category,difficulty,marks,text,option_a,option_b,option_c,option_d,correct,model_answer,explanation
+single,Programming,easy,2,"Which keyword declares a constant in JavaScript?",var,let,const,static,C,,"const creates a binding that cannot be reassigned."
+multi,Web Development,medium,4,"Which of these are HTTP methods?",GET,FETCH,POST,DELETE,A;C;D,,
+written,Databases,hard,10,"Explain the difference between an INNER JOIN and a LEFT JOIN.",,,,,,"INNER JOIN returns only matching rows; LEFT JOIN returns all rows from the left table plus matches (NULLs otherwise).",
