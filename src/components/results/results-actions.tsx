@@ -5,18 +5,20 @@ import { useState } from "react";
 import { postJson } from "@/lib/client/api";
 import { FormAlert } from "@/components/ui";
 import { btn } from "@/components/staff-shell";
+import { useConfirm } from "@/components/confirm-dialog";
 
 /** AI check / accept suggestions / publish: used on the exam results page and per attempt. */
 export function ResultsActions({
   examId, attemptId, aiEnabled, aiAvailable, canPublish, published, showPublish = true,
 }: { examId: string; attemptId?: string; aiEnabled: boolean; aiAvailable: boolean; canPublish: boolean; published: boolean; showPublish?: boolean }) {
+  const { ask, dialog } = useConfirm();
   const router = useRouter();
   const [busy, setBusy] = useState<string>();
   const [msg, setMsg] = useState<{ tone: "error" | "notice"; text: string }>();
 
   async function run(kind: "ai-check" | "ai-accept" | "publish") {
     if (busy) return;
-    if (kind === "publish" && !confirm("Publish results? Candidates will see their scores. After this, marks can only change through a dispute.")) return;
+    if (kind === "publish" && !(await ask({ title: "Publish results?", body: "Candidates will see their scores. After this, marks can only change through a dispute.", action: "Publish results" }))) return;
     setBusy(kind);
     setMsg(undefined);
     const url = kind === "publish" ? `/api/exams/${examId}/results/publish` : `/api/exams/${examId}/${kind}`;
@@ -31,6 +33,8 @@ export function ResultsActions({
 
   if (published) return null;
   return (
+    <>
+    {dialog}
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         {aiEnabled && aiAvailable && (
@@ -45,5 +49,6 @@ export function ResultsActions({
       {!aiEnabled && <p className="text-xs text-muted">AI checking is off for this exam: written answers are marked manually.</p>}
       {msg && <FormAlert tone={msg.tone}>{msg.text}</FormAlert>}
     </div>
+    </>
   );
 }

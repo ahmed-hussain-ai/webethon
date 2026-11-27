@@ -8,6 +8,7 @@ import { DIFFICULTIES, DIFFICULTY_LABEL, QUESTION_TYPES, TYPE_LABEL } from "@/li
 import { DifficultyBadge, TypeBadge } from "@/components/badges";
 import { FormAlert } from "@/components/ui";
 import { btn } from "@/components/staff-shell";
+import { useConfirm } from "@/components/confirm-dialog";
 
 type Item = ExamDetail["questions"][number];
 type Category = { id: string; name: string };
@@ -208,6 +209,7 @@ function RandomPicker({ examId, categories, excludeIds, onAdd }: { examId: strin
 
 export function QuestionBuilder({ exam, categories }: { exam: ExamDetail; categories: Category[] }) {
   const router = useRouter();
+  const { ask, dialog } = useConfirm();
   const editable = exam.canEditQuestions;
   const [items, setItems] = useState<Item[]>(exam.questions);
   const [mode, setMode] = useState<"bank" | "random">("bank");
@@ -228,15 +230,16 @@ export function QuestionBuilder({ exam, categories }: { exam: ExamDetail; catego
       const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!a || a.target === "_blank" || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
       if (a.origin !== window.location.origin || a.pathname === window.location.pathname) return;
-      if (!window.confirm("You have unsaved changes to the questions. Leave without saving?")) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      const href = a.pathname + a.search + a.hash;
+      void ask({ title: "Leave without saving?", body: "You have unsaved changes to the questions. They will be lost if you leave this page.", action: "Leave without saving", danger: true })
+        .then((leave) => { if (leave) { window.removeEventListener("beforeunload", h); router.push(href); } });
     };
     window.addEventListener("beforeunload", h);
     document.addEventListener("click", onClick, true);
     return () => { window.removeEventListener("beforeunload", h); document.removeEventListener("click", onClick, true); };
-  }, [dirty]);
+  }, [dirty, ask, router]);
 
   const rowErrors = (i: Item) => {
     const m = Number(i.marks), n = Number(i.negativeMarks);
@@ -293,6 +296,8 @@ export function QuestionBuilder({ exam, categories }: { exam: ExamDetail; catego
   }
 
   return (
+    <>
+    {dialog}
     <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
       <section aria-labelledby="paper-title" className="space-y-4">
         {!editable && (
@@ -391,5 +396,6 @@ export function QuestionBuilder({ exam, categories }: { exam: ExamDetail; catego
         </aside>
       )}
     </div>
+    </>
   );
 }

@@ -5,16 +5,18 @@ import { useState } from "react";
 import { postJson } from "@/lib/client/api";
 import { FormAlert } from "@/components/ui";
 import { btn } from "@/components/staff-shell";
+import { useConfirm } from "@/components/confirm-dialog";
 
 /** Duplicate (anyone on staff) and deactivate/reactivate (owner or admin). */
 export function QuestionActions({ id, isActive, canEdit }: { id: string; isActive: boolean; canEdit: boolean }) {
+  const { ask, dialog } = useConfirm();
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function run(action: "duplicate" | "deactivate" | "reactivate") {
     if (busy) return;
-    if (action === "deactivate" && !confirm("Deactivate this question? It disappears from the exam builder, but exams that already use it keep it.")) return;
+    if (action === "deactivate" && !(await ask({ title: "Deactivate question?", body: "It disappears from the exam builder, but exams that already use it keep it.", action: "Deactivate", danger: true }))) return;
     setBusy(action);
     setError(null);
     const res = await postJson<{ id?: string }>(`/api/questions/${id}/${action}`);
@@ -25,6 +27,8 @@ export function QuestionActions({ id, isActive, canEdit }: { id: string; isActiv
   }
 
   return (
+    <>
+    {dialog}
     <div className="flex flex-col items-end gap-2">
       <div className="flex flex-wrap justify-end gap-2">
         <button type="button" className={btn.secondary} onClick={() => run("duplicate")} disabled={!!busy}>
@@ -43,5 +47,6 @@ export function QuestionActions({ id, isActive, canEdit }: { id: string; isActiv
       </div>
       {error && <FormAlert>{error}</FormAlert>}
     </div>
+    </>
   );
 }

@@ -5,20 +5,22 @@ import { useState } from "react";
 import { postJson } from "@/lib/client/api";
 import { FormAlert } from "@/components/ui";
 import { btn } from "@/components/staff-shell";
+import { useConfirm } from "@/components/confirm-dialog";
 
 export function ExamActions({ examId, status, canPublish, canUnpublish, canDelete }: { examId: string; status: "DRAFT" | "PUBLISHED"; canPublish: boolean; canUnpublish: boolean; canDelete: boolean }) {
+  const { ask, dialog } = useConfirm();
   const router = useRouter();
   const [busy, setBusy] = useState<string>();
   const [error, setError] = useState<string>();
 
   async function act(action: "publish" | "unpublish" | "delete") {
     if (busy) return;
-    const ask = {
+    const question = {
       publish: "Publish this exam? Enrolled candidates will see it, and the question list will be locked.",
       unpublish: "Unpublish this exam? Candidates will no longer see it until you publish again.",
       delete: "Delete this draft exam permanently? This cannot be undone.",
     }[action];
-    if (!confirm(ask)) return;
+    if (!(await ask({ title: { publish: "Publish exam?", unpublish: "Unpublish exam?", delete: "Delete draft?" }[action], body: question, action: { publish: "Publish", unpublish: "Unpublish", delete: "Delete" }[action], danger: action === "delete" }))) return;
     setBusy(action);
     setError(undefined);
     let ok: boolean, message = "";
@@ -42,6 +44,8 @@ export function ExamActions({ examId, status, canPublish, canUnpublish, canDelet
   }
 
   return (
+    <>
+    {dialog}
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         <button type="button" className={btn.secondary} disabled={!!busy} onClick={async () => {
@@ -62,5 +66,6 @@ export function ExamActions({ examId, status, canPublish, canUnpublish, canDelet
       {status === "DRAFT" && !canPublish && <p className="text-xs text-muted">Fix the items marked ✗ to enable publishing.</p>}
       {error && <FormAlert>{error}</FormAlert>}
     </div>
+    </>
   );
 }

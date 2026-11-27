@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FormAlert } from "@/components/ui";
 import { btn } from "@/components/staff-shell";
+import { useConfirm } from "@/components/confirm-dialog";
 import { LocalTime } from "@/components/local-time";
 
 type Enrollment = {
@@ -43,6 +44,7 @@ function downloadCredentials(rows: Created[]) {
 }
 
 export function CandidatesPanel({ examId, enrollments, open }: { examId: string; enrollments: Enrollment[]; open: boolean }) {
+  const { ask, dialog } = useConfirm();
   const router = useRouter();
   const [mode, setMode] = useState<"search" | "emails" | "csv">("search");
   const [msg, setMsg] = useState<{ tone: "error" | "notice"; text: string; extra?: string[] }>();
@@ -82,7 +84,7 @@ export function CandidatesPanel({ examId, enrollments, open }: { examId: string;
   }
 
   async function revoke(e: Enrollment) {
-    if (!confirm(`Remove ${e.candidate.name} from this exam? They will no longer be able to enter it. You can enroll them again later.`)) return;
+    if (!(await ask({ title: "Remove candidate?", body: `${e.candidate.name} will no longer be able to enter this exam. You can enroll them again later.`, action: "Remove", danger: true }))) return;
     const r = await call(`/api/exams/${examId}/enrollments/${e.id}`, "DELETE");
     if (!r.ok) return setMsg({ tone: "error", text: r.message });
     router.refresh();
@@ -116,6 +118,8 @@ export function CandidatesPanel({ examId, enrollments, open }: { examId: string;
   }
 
   return (
+    <>
+    {dialog}
     <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
       <section aria-labelledby="enrolled-title" className="space-y-3">
         <h2 id="enrolled-title" className="font-display text-2xl">Enrolled candidates <span className="font-mono text-base text-muted">({active.length})</span></h2>
@@ -244,5 +248,6 @@ export function CandidatesPanel({ examId, enrollments, open }: { examId: string;
         )}
       </aside>
     </div>
+    </>
   );
 }

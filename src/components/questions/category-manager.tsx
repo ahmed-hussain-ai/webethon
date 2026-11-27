@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { categoryInputSchema } from "@/lib/validation/questions";
 import { Field, FormAlert } from "@/components/ui";
 import { btn } from "@/components/staff-shell";
+import { useConfirm } from "@/components/confirm-dialog";
 
 type Cat = { id: string; name: string; description: string | null; createdByName: string; questionCount: number; canManage: boolean };
 
@@ -20,6 +21,7 @@ async function send(url: string, method: string, body?: unknown) {
 }
 
 function CategoryRow({ cat }: { cat: Cat }) {
+  const { ask, dialog } = useConfirm();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(cat.name);
@@ -41,7 +43,7 @@ function CategoryRow({ cat }: { cat: Cat }) {
   }
 
   async function remove() {
-    if (!confirm(`Delete the category "${cat.name}"?`)) return;
+    if (!(await ask({ title: "Delete category?", body: `The category "${cat.name}" will be deleted.`, action: "Delete", danger: true }))) return;
     setBusy(true);
     const r = await send(`/api/categories/${cat.id}`, "DELETE");
     setBusy(false);
@@ -50,7 +52,9 @@ function CategoryRow({ cat }: { cat: Cat }) {
   }
 
   return (
+    <>
     <li className="px-5 py-4">
+      {dialog}
       {editing ? (
         <form onSubmit={save} noValidate className="grid gap-3 sm:grid-cols-[1fr_1.5fr_auto] sm:items-end">
           <Field label="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} autoFocus />
@@ -89,6 +93,7 @@ function CategoryRow({ cat }: { cat: Cat }) {
       )}
       {error && <div className="mt-3"><FormAlert>{error}</FormAlert></div>}
     </li>
+    </>
   );
 }
 
