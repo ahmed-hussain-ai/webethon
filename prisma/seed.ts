@@ -3,6 +3,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, QuestionType, Difficulty } from "../src/generated/prisma/client";
+import { markObjective, type Snapshot } from "../src/lib/attempts/marking";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
 
@@ -145,8 +146,81 @@ async function main() {
   await makeExam({ title: "Security Basics (Draft)", owner: ex2.id, startOffsetH: 72, windowH: 2, duration: 45,
     qIdx: [8, 9, 10, 11], publish: false, enroll: [] });
 
-  console.log(`Seeded: 1 admin, 2 examiners, ${candidates.length} candidates, ${cats.size} categories, ${qs.length} questions, 3 exams.`);
+  await seedCompletedExam(ex1.id, candidates.map((c) => c.id), qs.map((q) => q.id));
+  console.log(`Seeded: 1 admin, 2 examiners, ${candidates.length} candidates, ${cats.size} categories, ${qs.length} questions, 4 exams (1 completed with published results).`);
   console.log(`Password for every account: ${PASSWORD}  (admin: ${admin.email})`);
+}
+
+/**
+ * A COMPLETED exam with real-looking history (attempts two days ago, marked, results
+ * published, one open dispute, a few incidents) so results, analytics, reports and
+ * disputes can be demonstrated immediately. Written with triggers off (past timestamps).
+ */
+async function seedCompletedExam(examinerId: string, candidateIds: string[], questionIds: string[]) {
+  const pick = [12, 13, 14, 0, 3].map((i) => questionIds[i]);
+  const questions = await db.question.findMany({ where: { id: { in: pick } }, include: { options: { orderBy: { orderIndex: "asc" } }, category: true } });
+  const ordered = pick.map((id) => questions.find((q) => q.id === id)!);
+  const total = ordered.reduce((s, q) => s + Number(q.defaultMarks), 0);
+  const DAY = 24 * HOUR, start = new Date(Date.now() - 2 * DAY), end = new Date(start.getTime() + 3 * HOUR);
+  // Candidate behaviour: probability of a correct objective answer, written mark ratio (null = skipped)
+  const profiles = [{ p: 1, w: 0.8 }, { p: 0.75, w: 0.6 }, { p: 0.5, w: 0.3 }, { p: 0.25, w: null }];
+  const WRITTEN = ["SSR renders HTML on the server for each request, which helps SEO and first paint; CSR renders in the browser, which allows rich interactivity and reduces server load.",
+    "Server-side rendering builds pages on the server so they load fast; client-side rendering uses JavaScript in the browser so the app feels more interactive.",
+    "SSR is on the server and CSR is on the client. SSR is good for SEO."];
+
+  await db.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe(`SET LOCAL session_replication_role = replica`); // historical data: bypass "now"-based triggers
+    const exam = await tx.exam.create({
+      data: {
+        title: "Programming Fundamentals Final", createdById: examinerId, description: "Completed demo exam with published results",
+        instructions: "Answer all questions. Multiple-select questions use partial marking.", startAt: start, endAt: end,
+        durationMinutes: 45, totalMarks: total, passMarks: Math.round(total * 0.5), status: "PUBLISHED", publishedAt: new Date(start.getTime() - DAY),
+        multiSelectRule: "PARTIAL", resultsStatus: "PUBLISHED", resultsPublishedAt: new Date(end.getTime() + 20 * HOUR),
+        questions: { create: ordered.map((q, orderIndex) => ({ questionId: q.id, marks: q.defaultMarks, orderIndex })) },
+      },
+    });
+    for (const cid of candidateIds) await tx.enrollment.create({ data: { examId: exam.id, candidateId: cid, enrolledById: examinerId, enrolledAt: new Date(start.getTime() - DAY) } });
+
+    for (const [ci, prof] of profiles.entries()) {
+      const startedAt = new Date(start.getTime() + (10 + ci * 7) * 60_000);
+      const deadlineAt = new Date(startedAt.getTime() + 45 * 60_000);
+      const submittedAt = new Date(startedAt.getTime() + (30 + ci * 3) * 60_000);
+      const attempt = await tx.attempt.create({
+        data: { examId: exam.id, userId: candidateIds[ci], status: ci === 3 ? "AUTO_SUBMITTED" : "SUBMITTED", startedAt, deadlineAt,
+          submittedAt: ci === 3 ? deadlineAt : submittedAt, lastSeenAt: submittedAt, questionCount: ordered.length, totalMarks: total, autoGradedAt: submittedAt },
+      });
+      let sum = 0;
+      for (const [i, q] of ordered.entries()) {
+        const snap: Snapshot = {
+          type: q.type, text: q.text, difficulty: q.difficulty, category: q.category.name,
+          options: q.options.map((o) => ({ id: o.id, text: o.text })), correctOptionIds: q.options.filter((o) => o.isCorrect).map((o) => o.id), modelAnswer: q.modelAnswer,
+        };
+        const aq = await tx.attemptQuestion.create({ data: { attemptId: attempt.id, questionId: q.id, orderIndex: i, optionOrder: snap.options.map((o) => o.id), marks: q.defaultMarks, snapshot: snap } });
+        const marks = Number(q.defaultMarks);
+        if (q.type === "WRITTEN") {
+          const text = prof.w === null ? null : WRITTEN[ci];
+          const manual = prof.w === null ? null : Math.round(marks * prof.w * 2) / 2;
+          sum += manual ?? 0;
+          await tx.answer.create({ data: { attemptId: attempt.id, attemptQuestionId: aq.id, textAnswer: text, autoMarks: prof.w === null ? 0 : null, manualMarks: manual, gradedById: manual === null ? null : examinerId, gradedAt: manual === null ? null : end, clientSeq: i + 1 } });
+        } else {
+          const correct = ((ci * 3 + i * 5) % 100) / 100 < prof.p; // deterministic spread
+          const wrong = snap.options.filter((o) => !snap.correctOptionIds.includes(o.id)).map((o) => o.id);
+          const sel = correct ? snap.correctOptionIds : q.type === "MULTI_SELECT" ? [snap.correctOptionIds[0], wrong[0]] : [wrong[ci % wrong.length]];
+          const auto = markObjective(snap, sel, marks, 0, "PARTIAL") ?? 0;
+          sum += auto;
+          await tx.answer.create({ data: { attemptId: attempt.id, attemptQuestionId: aq.id, selectedOptionIds: sel, autoMarks: auto, clientSeq: i + 1, markedForReview: ci === 2 && i === 1 } });
+        }
+        if (q.type === "WRITTEN" && ci === 2) {
+          await tx.dispute.create({ data: { attemptId: attempt.id, attemptQuestionId: aq.id, raisedById: candidateIds[ci], category: "GRADING_ERROR",
+            description: "I explained both SSR and CSR and gave an advantage (SEO). I think this deserves more than 3 marks." } });
+        }
+      }
+      await tx.attempt.update({ where: { id: attempt.id }, data: { objectiveScore: sum, totalScore: Math.max(0, sum), pendingCount: 0 } });
+      if (ci === 1) await tx.attemptEvent.createMany({ data: [{ attemptId: attempt.id, type: "TAB_HIDDEN", serverTime: new Date(startedAt.getTime() + 12 * 60_000) }, { attemptId: attempt.id, type: "TAB_HIDDEN", serverTime: new Date(startedAt.getTime() + 19 * 60_000) }] });
+      if (ci === 3) await tx.attemptEvent.createMany({ data: [{ attemptId: attempt.id, type: "PASTE", details: { length: 214 }, serverTime: new Date(startedAt.getTime() + 25 * 60_000) }, { attemptId: attempt.id, type: "CONNECTION_LOST", serverTime: new Date(startedAt.getTime() + 30 * 60_000) }, { attemptId: attempt.id, type: "CONNECTION_RESTORED", details: { offlineSeconds: 48 }, serverTime: new Date(startedAt.getTime() + 31 * 60_000) }] });
+    }
+    await tx.announcement.create({ data: { examId: exam.id, createdById: examinerId, message: "Reminder: multiple-select questions use partial marking.", createdAt: new Date(start.getTime() + 20 * 60_000) } });
+  });
 }
 
 main()
