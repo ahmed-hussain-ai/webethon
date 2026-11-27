@@ -4,7 +4,7 @@ import { SiteHeader } from "./site-header";
 import { LogoutButton } from "./logout-button";
 import type { CurrentUser } from "@/lib/auth/current-user";
 
-export type StaffNav = "dashboard" | "exams" | "questions" | "categories" | "import";
+export type StaffNav = "dashboard" | "exams" | "questions" | "categories" | "import" | "users";
 
 const NAV: { key: StaffNav; href: string; label: string }[] = [
   { key: "dashboard", href: "/dashboard", label: "Dashboard" },
@@ -26,7 +26,7 @@ export function StaffShell({ user, active, children }: { user: Pick<CurrentUser,
       </SiteHeader>
       <nav aria-label="Main" className="header-band border-t border-white/10">
         <ul className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-5 py-3">
-          {NAV.map((n) => (
+          {[...NAV, ...(user.role === "ADMIN" ? [{ key: "users" as const, href: "/admin/users", label: "Users" }] : [])].map((n) => (
             <li key={n.key} className="shrink-0">
               <Link
                 href={n.href}
