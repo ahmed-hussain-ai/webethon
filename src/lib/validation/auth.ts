@@ -14,6 +14,9 @@ export const emailSchema = z
 export const passwordSchema = z
   .string({ error: "Password is required" })
   .min(8, "Password must be at least 8 characters")
+  // Leading/trailing spaces are almost always copy-paste accidents. Forbidding them when a
+  // password is SET makes it safe to trim them when a password is USED (login).
+  .refine((p) => p === p.trim(), "Password can't start or end with a space")
   .refine((p) => new TextEncoder().encode(p).length <= 72, "Password must be at most 72 bytes")
   .refine((p) => /[A-Za-z]/.test(p), "Password must contain a letter")
   .refine((p) => /[0-9]/.test(p), "Password must contain a number");
@@ -35,12 +38,12 @@ export const signupSchema = z.object({
 // Login checks only presence; strength rules apply when a password is SET, not when it is used.
 export const loginSchema = z.object({
   email: emailSchema,
-  password: z.string({ error: "Password is required" }).min(1, "Password is required").max(200),
+  password: z.string({ error: "Password is required" }).trim().min(1, "Password is required").max(200),
 });
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string({ error: "Current password is required" }).min(1, "Current password is required").max(200),
+    currentPassword: z.string({ error: "Current password is required" }).trim().min(1, "Current password is required").max(200),
     newPassword: passwordSchema,
   })
   .refine((d) => d.currentPassword !== d.newPassword, {

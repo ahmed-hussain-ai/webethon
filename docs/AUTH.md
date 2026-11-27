@@ -19,7 +19,7 @@ The PDF does not mention signup; those rules are our decisions (marked ★).
 | Field | Rule |
 |---|---|
 | Email | trimmed, lower-cased, ≤ 254 chars, must be a real email shape (`abc`, `abc.com`, `a@`, `a b@x` are rejected) |
-| Password | 8 to 72 bytes (bcrypt limit), at least one letter and one number |
+| Password | 8 to 72 bytes (bcrypt limit), at least one letter and one number, cannot start or end with a space. At login, surrounding spaces are trimmed (copy-paste safety) |
 | Name | 2 to 100 chars after trimming, no control characters or `< >` |
 
 ## Temporary passwords ★
