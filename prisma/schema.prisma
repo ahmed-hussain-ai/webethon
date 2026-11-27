@@ -79,17 +79,21 @@ enum EnrollmentStatus {
 // ───────────────────── Users & access ─────────────────────
 
 model User {
-  id           String    @id @default(uuid()) @db.Uuid
-  name         String    @db.VarChar(100)
-  email        String    @unique @db.VarChar(254) // always stored lower-case
-  passwordHash String    @map("password_hash")
-  role         Role
-  isActive     Boolean   @default(true) @map("is_active")
+  id                 String    @id @default(uuid()) @db.Uuid
+  name               String    @db.VarChar(100)
+  email              String    @unique @db.VarChar(254) // always stored lower-case
+  passwordHash       String    @map("password_hash")
+  role               Role
+  isActive           Boolean   @default(true) @map("is_active")
   // Bumped on deactivation, role change or password change → every old login token dies.
-  tokenVersion Int       @default(0) @map("token_version")
-  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(3)
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tokenVersion       Int       @default(0) @map("token_version")
+  // Accounts created by admin/examiner/CSV get a random temporary password and must change it.
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  failedLoginCount   Int       @default(0) @map("failed_login_count")
+  lockedUntil        DateTime? @map("locked_until") @db.Timestamptz(3)
+  lastLoginAt        DateTime? @map("last_login_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   preferences        WorkspacePreferences?
   categoriesCreated  Category[]
