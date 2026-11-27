@@ -82,7 +82,15 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
                 {e.attempt.status === "AUTO_SUBMITTED" ? "Submitted automatically when time ran out" : "You submitted"} on{" "}
                 <LocalTime iso={e.attempt.submittedAt} />.
               </p>
-              <p className="text-sm text-muted">{e.resultsPublished ? "Your result has been published." : "Your result will appear here once your examiner publishes it."}</p>
+              {e.result ? (
+                <>
+                  <p className="font-mono text-3xl font-bold">{e.result.score}<span className="text-base text-muted"> / {e.totalMarks}</span></p>
+                  <p className={`text-sm font-bold ${e.result.passed ? "text-success" : "text-danger"}`}>{e.result.percent}% · {e.result.passed ? "Passed" : "Not passed"}</p>
+                  <Link className={`${btn.primary} w-full`} href={`/results/${e.attempt.id}`}>View full result</Link>
+                </>
+              ) : (
+                <p className="text-sm text-muted">Your result will appear here once your examiner publishes it.</p>
+              )}
             </>
           )}
           {e.state === "MISSED" && (

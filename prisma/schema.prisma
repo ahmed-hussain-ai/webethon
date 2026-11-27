@@ -291,12 +291,15 @@ model Attempt {
   // Filled automatically when the attempt finishes (MCQs only; written answers are reviewed).
   objectiveScore Decimal?      @map("objective_score") @db.Decimal(7, 2)
   autoGradedAt   DateTime?     @map("auto_graded_at") @db.Timestamptz(3)
+  totalScore     Decimal?      @map("total_score") @db.Decimal(7, 2) // sum of final marks, never below 0
+  pendingCount   Int           @default(0) @map("pending_count") // answers still needing a mark
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 
   exam      Exam              @relation(fields: [examId], references: [id], onDelete: Restrict)
   user      User              @relation(fields: [userId], references: [id], onDelete: Restrict)
   questions AttemptQuestion[]
   answers   Answer[]
+  reports   ResultReport[]
 
   @@index([examId, status])
   @@index([userId])
@@ -327,19 +330,45 @@ model AttemptQuestion {
 // The candidate's answer to one question of their attempt. One row per attempt question.
 // client_seq orders autosaves: an older save arriving late can never overwrite a newer one.
 model Answer {
-  id                String   @id @default(uuid()) @db.Uuid
-  attemptId         String   @map("attempt_id") @db.Uuid
-  attemptQuestionId String   @unique @map("attempt_question_id") @db.Uuid
-  selectedOptionIds Json     @default("[]") @map("selected_option_ids")
-  textAnswer        String?  @map("text_answer")
-  markedForReview   Boolean  @default(false) @map("marked_for_review")
-  clientSeq         Int      @default(0) @map("client_seq")
-  savedAt           DateTime @default(now()) @map("saved_at") @db.Timestamptz(3)
-  autoMarks         Decimal? @map("auto_marks") @db.Decimal(6, 2) // objective questions, set when the attempt finishes
+  id                String    @id @default(uuid()) @db.Uuid
+  attemptId         String    @map("attempt_id") @db.Uuid
+  attemptQuestionId String    @unique @map("attempt_question_id") @db.Uuid
+  selectedOptionIds Json      @default("[]") @map("selected_option_ids")
+  textAnswer        String?   @map("text_answer")
+  markedForReview   Boolean   @default(false) @map("marked_for_review")
+  clientSeq         Int       @default(0) @map("client_seq")
+  savedAt           DateTime  @default(now()) @map("saved_at") @db.Timestamptz(3)
+  autoMarks         Decimal?  @map("auto_marks") @db.Decimal(6, 2) // objective questions, set when the attempt finishes
+  manualMarks       Decimal?  @map("manual_marks") @db.Decimal(6, 2) // examiner mark; final = manual ?? auto
+  feedback          String?
+  gradedById        String?   @map("graded_by") @db.Uuid
+  gradedAt          DateTime? @map("graded_at") @db.Timestamptz(3)
+  aiMarks           Decimal?  @map("ai_marks") @db.Decimal(6, 2) // AI suggestion, never final by itself
+  aiReason          String?   @map("ai_reason")
+  aiModel           String?   @map("ai_model") @db.VarChar(100)
+  aiAt              DateTime? @map("ai_at") @db.Timestamptz(3)
 
   attempt         Attempt         @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   attemptQuestion AttemptQuestion @relation(fields: [attemptQuestionId], references: [id], onDelete: Cascade)
 
   @@index([attemptId])
   @@map("answers")
+}
+
+// Issued result report (PDF 4.2 / 4.6). The public code proves authenticity; content_hash
+// detects reports made stale by later mark changes (they show as "superseded").
+model ResultReport {
+  id           String    @id @default(uuid()) @db.Uuid
+  attemptId    String    @map("attempt_id") @db.Uuid
+  code         String    @unique @db.VarChar(16)
+  contentHash  String    @map("content_hash") @db.VarChar(64)
+  score        Decimal   @db.Decimal(7, 2)
+  totalMarks   Decimal   @map("total_marks") @db.Decimal(7, 2)
+  issuedAt     DateTime  @default(now()) @map("issued_at") @db.Timestamptz(3)
+  supersededAt DateTime? @map("superseded_at") @db.Timestamptz(3)
+
+  attempt Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@map("result_reports")
 }

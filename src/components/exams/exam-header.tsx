@@ -3,7 +3,7 @@ import type { ExamDetail } from "@/lib/exams/service";
 import { LocalTime } from "@/components/local-time";
 import { PhaseBadge } from "./phase-badge";
 
-export type ExamTab = "settings" | "questions" | "candidates" | "review";
+export type ExamTab = "settings" | "questions" | "candidates" | "review" | "results";
 
 export function ExamHeader({ exam, tab }: { exam: ExamDetail; tab: ExamTab }) {
   const blocking = exam.checks.filter((c) => c.blocking && !c.ok).length;
@@ -12,6 +12,7 @@ export function ExamHeader({ exam, tab }: { exam: ExamDetail; tab: ExamTab }) {
     { key: "questions", href: `/exams/${exam.id}/questions`, label: "Questions", badge: String(exam.questions.length) },
     { key: "candidates", href: `/exams/${exam.id}/candidates`, label: "Candidates", badge: String(exam.activeEnrollments) },
     { key: "review", href: `/exams/${exam.id}/review`, label: exam.status === "DRAFT" ? "Review & publish" : "Review", badge: exam.status === "DRAFT" && blocking ? `${blocking} to fix` : undefined },
+    ...(exam.status === "PUBLISHED" ? [{ key: "results" as const, href: `/exams/${exam.id}/results`, label: exam.phase === "COMPLETED" ? "Results" : "Live & results" }] : []),
   ];
   return (
     <div className="mb-6">

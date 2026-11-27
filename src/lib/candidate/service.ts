@@ -75,7 +75,7 @@ async function visibleExams(userId: string, examId?: string) {
       enrollments: { where: { candidateId: userId }, select: { status: true } },
       attempts: {
         where: { userId, isSandbox: false },
-        select: { id: true, status: true, deadlineAt: true, submittedAt: true, startedAt: true },
+        select: { id: true, status: true, deadlineAt: true, submittedAt: true, startedAt: true, totalScore: true },
       },
     },
     orderBy: { startAt: "asc" },
@@ -94,6 +94,14 @@ function shape(e: Awaited<ReturnType<typeof visibleExams>>[number], now: Date) {
     totalMarks: n(e.totalMarks), questionCount: e._count.questions,
     minutesIfStartedNow, shortened: minutesIfStartedNow !== null && minutesIfStartedNow < e.durationMinutes,
     resultsPublished: e.resultsStatus === "PUBLISHED",
+    // Score only once the examiner has published results.
+    result: e.resultsStatus === "PUBLISHED" && attempt && attempt.status !== "IN_PROGRESS" && attempt.totalScore !== null
+      ? {
+          score: n(attempt.totalScore),
+          percent: Math.round((n(attempt.totalScore) / n(e.totalMarks)) * 10000) / 100,
+          passed: n(attempt.totalScore) >= n(e.passMarks),
+        }
+      : null,
     attempt: attempt && {
       id: attempt.id, status: attempt.status, startedAt: attempt.startedAt.toISOString(),
       deadlineAt: attempt.deadlineAt.toISOString(), submittedAt: attempt.submittedAt?.toISOString() ?? null,

@@ -50,12 +50,21 @@ function Card({ e, serverNow }: { e: Item; serverNow: string }) {
         {(e.state === "AVAILABLE" || e.state === "TOO_LATE") && <p>Closes <LocalTime iso={e.endAt} /> · in <Countdown target={e.endAt} serverNow={serverNow} refreshAtZero className="font-semibold" /></p>}
         {e.state === "AVAILABLE" && e.shortened && <p className="mt-1 text-danger">You&apos;ll only get {e.minutesIfStartedNow} of {e.durationMinutes} minutes if you start now.</p>}
         {e.state === "IN_PROGRESS" && e.attempt && <p>Time left: <Countdown target={e.attempt.deadlineAt} serverNow={serverNow} refreshAtZero className="font-semibold" /></p>}
-        {e.state === "SUBMITTED" && e.attempt?.submittedAt && <p>Submitted <LocalTime iso={e.attempt.submittedAt} /> · {e.resultsPublished ? "Result published" : "Result not published yet"}</p>}
+        {e.state === "SUBMITTED" && e.attempt?.submittedAt && <p>Submitted <LocalTime iso={e.attempt.submittedAt} />{!e.result && " · Result not published yet"}</p>}
+        {e.result && (
+          <p className="mt-2 flex items-baseline gap-3">
+            <span className="font-mono text-2xl font-bold">{e.result.score}<span className="text-sm text-muted">/{e.totalMarks}</span></span>
+            <span className="font-mono text-sm">{e.result.percent}%</span>
+            <span className={`text-sm font-bold ${e.result.passed ? "text-success" : "text-danger"}`}>{e.result.passed ? "Passed" : "Not passed"}</span>
+          </p>
+        )}
         {e.state === "MISSED" && <p className="text-muted">Closed <LocalTime iso={e.endAt} /> without an attempt.</p>}
       </div>
       <div className="mt-4">
         {e.state === "IN_PROGRESS" && e.attempt ? (
           <Link className={btn.primary} href={`/attempts/${e.attempt.id}`}>Resume exam</Link>
+        ) : e.result && e.attempt ? (
+          <Link className={btn.primary} href={`/results/${e.attempt.id}`}>View result</Link>
         ) : (
           <Link className={e.state === "AVAILABLE" ? btn.primary : btn.secondary} href={`/my-exams/${e.id}`}>
             {e.state === "AVAILABLE" ? "Open exam" : "View details"}
