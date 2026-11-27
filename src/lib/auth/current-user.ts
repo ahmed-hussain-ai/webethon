@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/api";
 
 export type CurrentUser = {
   id: string;
+  sessionId: string;
   name: string;
   email: string;
   role: Role;
@@ -18,20 +19,28 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 /**
  * Who is logged in, based ONLY on the signed session cookie + the database.
  * Never on ids, emails or roles sent in the request body/query.
- * Returns null if: no cookie, bad/expired token, user gone, user deactivated,
- * or token_version changed (password changed, logged out everywhere, deactivated).
+ * Returns null if: no cookie, bad/expired token, session revoked (logout) or expired,
+ * user gone or deactivated, or token_version changed (password change / logout everywhere).
  */
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const session = await readSession();
-  if (!session || !UUID_RE.test(session.sub)) return null;
+  const token = await readSession();
+  if (!token || !UUID_RE.test(token.sid) || !UUID_RE.test(token.sub)) return null;
 
-  const user = await db.user.findUnique({
-    where: { id: session.sub },
-    select: { id: true, name: true, email: true, role: true, isActive: true, mustChangePassword: true, tokenVersion: true },
+  const session = await db.session.findUnique({
+    where: { id: token.sid },
+    select: {
+      userId: true, revokedAt: true, expiresAt: true,
+      user: { select: { id: true, name: true, email: true, role: true, isActive: true, mustChangePassword: true, tokenVersion: true } },
+    },
   });
-  if (!user || !user.isActive || user.tokenVersion !== session.tv) return null;
+  if (!session || session.revokedAt || session.expiresAt <= new Date() || session.userId !== token.sub) return null;
+  const user = session.user;
+  if (!user.isActive || user.tokenVersion !== token.tv) return null;
 
-  return { id: user.id, name: user.name, email: user.email, role: user.role, mustChangePassword: user.mustChangePassword, tokenVersion: user.tokenVersion };
+  return {
+    id: user.id, sessionId: token.sid, name: user.name, email: user.email, role: user.role,
+    mustChangePassword: user.mustChangePassword, tokenVersion: user.tokenVersion,
+  };
 }
 
 /**

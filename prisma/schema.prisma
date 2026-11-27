@@ -96,6 +96,7 @@ model User {
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   preferences        WorkspacePreferences?
+  sessions           Session[]
   categoriesCreated  Category[]
   questionsCreated   Question[]
   examsCreated       Exam[]
@@ -104,6 +105,22 @@ model User {
 
   @@index([role])
   @@map("users")
+}
+
+// One row per login. Logout revokes THIS row, so a copied cookie dies with it.
+model Session {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  ip        String?   @db.VarChar(64)
+  userAgent String?   @map("user_agent") @db.VarChar(300)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
 }
 
 model WorkspacePreferences {

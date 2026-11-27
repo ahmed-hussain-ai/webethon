@@ -41,6 +41,21 @@ The PDF does not mention signup; those rules are our decisions (marked ★).
 - ★ Cooldown: each 5 consecutive failures lock the account for 5 min, then 10, 20, max 30. While locked, even the right password is refused. Kept short on purpose: a long lock would let someone block a candidate from their exam.
 - Success resets the failure counter and records `last_login_at`.
 
+## Hardening (security review)
+| Threat | Protection | Verified |
+|---|---|---|
+| Copied/stolen cookie after logout | Every login is a row in `sessions`; logout revokes that row server-side | copy rejected after logout |
+| Parallel brute force | One atomic `UPDATE` counts the attempt and sets the lock, so at most 5 passwords are checked per lock window | 40 parallel guesses → 5 checked |
+| Password spraying across many emails | 50 **failed** logins per IP per 10 min (successful ones don't count, so a whole lab behind one IP can sign in) | 51st failure → 429 |
+| Bot signups | 20 signups per IP per 10 min | 21st → 429 |
+| Discovering emails via lockout | Unknown emails lock after 5 tries exactly like real ones | identical responses |
+| Weak/placeholder `AUTH_SECRET` | Server refuses to start | startup error |
+| Clickjacking, MIME sniffing | `X-Frame-Options: DENY`, `frame-ancestors 'none'`, `nosniff`, HSTS, no `X-Powered-By` | headers present |
+| Cached private responses | Every API response is `Cache-Control: no-store` | header present |
+
+**Deployment note:** set `TRUST_PROXY="true"` only when running behind nginx/Vercel. Without a proxy the `X-Forwarded-For` header can be faked, so it is ignored.
+Known trade-off: signup still says "email already exists" (no email service to send confirmations), and per-IP limits are in memory (one server instance).
+
 ## Other protections
 - State-changing requests from another website (`Origin` mismatch) → `403 BAD_ORIGIN`.
 - All errors use one shape: `{ "error": { "code", "message", "fields"? } }`, so the frontend can show field-level messages.

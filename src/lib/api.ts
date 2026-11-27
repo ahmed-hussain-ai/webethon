@@ -18,7 +18,10 @@ export class ApiError extends Error {
   }
 }
 
-export const ok = <T>(data: T, status = 200) => NextResponse.json(data, { status });
+// API responses can carry personal data or temporary passwords: never cache them anywhere.
+const NO_STORE = { "Cache-Control": "no-store" };
+
+export const ok = <T>(data: T, status = 200) => NextResponse.json(data, { status, headers: NO_STORE });
 
 /** Parse a JSON body against a schema; bad JSON or invalid fields → 400 with per-field messages. */
 export async function parseBody<S extends z.ZodType>(req: Request, schema: S): Promise<z.output<S>> {
@@ -64,14 +67,14 @@ export function handler<Ctx = unknown>(fn: (req: Request, ctx: Ctx) => Promise<R
       if (e instanceof ApiError) {
         return NextResponse.json(
           { error: { code: e.code, message: e.message, ...(e.fields ? { fields: e.fields } : {}) } },
-          { status: e.status, headers: e.headers },
+          { status: e.status, headers: { ...NO_STORE, ...e.headers } },
         );
       }
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-        return NextResponse.json({ error: { code: "CONFLICT", message: "This record already exists" } }, { status: 409 });
+        return NextResponse.json({ error: { code: "CONFLICT", message: "This record already exists" } }, { status: 409, headers: NO_STORE });
       }
       console.error(e);
-      return NextResponse.json({ error: { code: "INTERNAL", message: "Something went wrong" } }, { status: 500 });
+      return NextResponse.json({ error: { code: "INTERNAL", message: "Something went wrong" } }, { status: 500, headers: NO_STORE });
     }
   };
 }
